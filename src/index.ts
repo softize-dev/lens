@@ -28,7 +28,6 @@ export { lensKyselyLog } from './kysely.ts'
 export { findRecord, listRecords } from './api.ts'
 export { docCoverage, readStructure } from './structure.ts'
 export type * from './structure.ts'
-export { renderPanel } from './panel.ts'
 
 /** Os adapters que a lente sabe observar. Os demais seguem intactos. */
 export interface InstrumentableAdapters {
