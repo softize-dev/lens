@@ -7,7 +7,8 @@
  *
  * Ver ADR 0054 para a fronteira entre esta lente, o Maestro e o Opus.
  */
-import { join } from 'node:path'
+import { existsSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import type { LogEvent } from 'kysely'
 import type {
   AiAdapter,
@@ -19,7 +20,10 @@ import type {
 import { lensAi, lensAudit, lensEvents, lensObservability, lensQueue } from './adapters.ts'
 import { fileStore, type LensStore } from './store.ts'
 import { lensKyselyLog, type KyselyLogOptions } from './kysely.ts'
+import { aiInventory, type AiInventory } from './ai.ts'
+import { projectStatus, type ProjectStatus } from './project.ts'
 import { readStructure, type Structure } from './structure.ts'
+import { testInventory, type TestInventory } from './tests.ts'
 
 export type { LensStore } from './store.ts'
 export type { KyselyLogOptions } from './kysely.ts'
@@ -27,7 +31,13 @@ export * from './types.ts'
 export { lensKyselyLog } from './kysely.ts'
 export { findRecord, listRecords } from './api.ts'
 export { docCoverage, readStructure } from './structure.ts'
+export { conformity, projectStatus } from './project.ts'
+export { aiInventory } from './ai.ts'
+export { testInventory } from './tests.ts'
 export type * from './structure.ts'
+export type * from './project.ts'
+export type * from './ai.ts'
+export type * from './tests.ts'
 
 /** Os adapters que a lente sabe observar. Os demais seguem intactos. */
 export interface InstrumentableAdapters {
@@ -48,6 +58,10 @@ export interface LensOptions {
    * na raiz do processo, que é onde o `opus gen` publica a projeção.
    */
   manifest?: string
+  /** Diretório observado — o serviço em execução. Padrão: a raiz do processo. */
+  target?: string
+  /** Raiz do repositório, onde vivem `.claude/` e `base.json`. Padrão: descoberta. */
+  repoRoot?: string
   /**
    * Ativação. Sem valor explícito, a lente lê `LENS_ENABLED` e permanece desligada em
    * produção mesmo que a variável esteja presente — a inspeção é ferramenta de
@@ -62,10 +76,28 @@ export interface Lens {
   /** Declarações do projeto: actions, entidades, dicionários, reactions e schedules.
    *  `null` quando o manifest não existe — o projeto precisa rodar `opus gen`. */
   structure(): Structure | null
+  /** Configuração de agentes que o repositório carrega. */
+  ai(): AiInventory
+  /** Versões do Opus e do Base: aplicada, instalada e adotada pela branch principal. */
+  project(): ProjectStatus
+  /** Arquivos de teste do alvo observado e o que eles mencionam. */
+  tests(): TestInventory
   /** Devolve os adapters decorados, ou os mesmos que recebeu quando desligada. */
   instrument<T extends InstrumentableAdapters>(adapters: T): T
   /** `log` para o construtor do Kysely; sem efeito quando a lente está desligada. */
   kyselyLog(options?: KyselyLogOptions): (event: LogEvent) => void
+}
+
+/** A raiz é onde mora o `.claude/`; o serviço observado costuma ser um subdiretório. */
+function discoverRepoRoot(from: string): string {
+  let current = from
+  for (let depth = 0; depth < 8; depth += 1) {
+    if (existsSync(join(current, '.claude')) || existsSync(join(current, '.git'))) return current
+    const parent = dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+  return from
 }
 
 function resolveEnabled(explicit?: boolean): boolean {
@@ -82,11 +114,22 @@ export function createLens(options: LensOptions = {}): Lens {
   })
 
   const manifest = options.manifest ?? join(process.cwd(), '.opus', 'manifest.json')
+  const target = options.target ?? process.cwd()
+  const repoRoot = options.repoRoot ?? discoverRepoRoot(target)
 
   return {
     enabled,
     store,
     structure: () => readStructure(manifest),
+    ai: () => aiInventory(repoRoot, [relative(repoRoot, target) === '' ? 'CLAUDE.md' : `${relative(repoRoot, target)}/CLAUDE.md`]),
+    project: () => projectStatus(repoRoot, target),
+    tests: () => {
+      const structure = readStructure(manifest)
+      return testInventory(target, {
+        actions: structure?.actions.map((action) => action.name) ?? [],
+        entities: structure?.entities.map((entity) => entity.name) ?? [],
+      })
+    },
     instrument(adapters) {
       if (!enabled) return adapters
       return {
