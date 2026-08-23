@@ -22,7 +22,7 @@ import { fileStore, type LensStore } from './store.ts'
 import { lensKyselyLog, type KyselyLogOptions } from './kysely.ts'
 import { aiInventory, type AiInventory } from './ai.ts'
 import { projectStatus, type ProjectStatus } from './project.ts'
-import { readStructure, type Structure } from './structure.ts'
+import { inspectStructure, readStructure, type Structure } from './structure.ts'
 import { testInventory, type TestInventory } from './tests.ts'
 import { createSuiteRunner, type SuiteRunner } from './run.ts'
 
@@ -31,7 +31,9 @@ export type { KyselyLogOptions } from './kysely.ts'
 export * from './types.ts'
 export { lensKyselyLog } from './kysely.ts'
 export { findRecord, listRecords } from './api.ts'
-export { docCoverage, readStructure } from './structure.ts'
+export { docCoverage, inspectStructure, readStructure } from './structure.ts'
+export { inspect } from './inspect.ts'
+export type * from './inspect.ts'
 export { conformity, projectStatus } from './project.ts'
 export { aiInventory } from './ai.ts'
 export { testInventory } from './tests.ts'
@@ -77,8 +79,8 @@ export interface Lens {
   enabled: boolean
   store: LensStore
   /** Declarações do projeto: actions, entidades, dicionários, reactions e schedules.
-   *  `null` quando o manifest não existe — o projeto precisa rodar `opus gen`. */
-  structure(): Structure | null
+   *  Cai na introspecção do Opus quando não há manifest; `null` se nem isso responder. */
+  structure(): Promise<Structure | null>
   /** Configuração de agentes que o repositório carrega. */
   ai(): AiInventory
   /** Versões do Opus e do Base: aplicada, instalada e adotada pela branch principal. */
@@ -125,11 +127,13 @@ export function createLens(options: LensOptions = {}): Lens {
   return {
     enabled,
     store,
-    structure: () => readStructure(manifest),
+    structure: () => inspectStructure({ manifest, dir: target }),
     ai: () => aiInventory(repoRoot, [relative(repoRoot, target) === '' ? 'CLAUDE.md' : `${relative(repoRoot, target)}/CLAUDE.md`]),
     project: () => projectStatus(repoRoot, target),
     suite: createSuiteRunner(target),
     tests: () => {
+      // O inventário é síncrono e a menção só precisa dos nomes: o manifest basta, e sem
+      // ele a lista de menções vem vazia em vez de a tela inteira esperar a introspecção.
       const structure = readStructure(manifest)
       return testInventory(target, {
         actions: structure?.actions.map((action) => action.name) ?? [],

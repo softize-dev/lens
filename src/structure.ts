@@ -11,6 +11,7 @@
  * projeção precisa rodar `opus gen`, e dizer isso é mais útil que uma lista incompleta.
  */
 import { readFileSync } from 'node:fs'
+import { resolveOpusModule } from './opus-module.ts'
 
 export interface StructureField {
   name: string
@@ -77,7 +78,13 @@ export interface StructureDomain {
 }
 
 export interface Structure {
-  source: 'manifest'
+  /**
+   * De onde as declarações vieram. `manifest` é a projeção completa, com documentação de
+   * negócio; `introspect` é a leitura estática do próprio Opus, que hoje enxerga actions,
+   * reactions e schedules — sem entidades, dicionários nem docs. A tela mostra qual está
+   * em uso para ninguém confundir "não existe" com "esta fonte não vê".
+   */
+  source: 'manifest' | 'introspect'
   opusVersion?: string
   domains: StructureDomain[]
   actions: StructureAction[]
@@ -280,4 +287,93 @@ export function docCoverage(structure: Structure): DocCoverage {
     gaps,
     fields: { total: fields.length, documented: fields.filter((field) => field.doc !== undefined).length },
   }
+}
+
+interface IntrospectAction {
+  name?: string | null
+  kind?: string | null
+  emits?: string[]
+  file?: string
+}
+
+interface IntrospectResult {
+  actions: IntrospectAction[]
+  reactions: { name?: string | null; on?: string[]; file?: string }[]
+  schedules: { name?: string | null; action?: string | null; cron?: string | null; every?: string | null }[]
+}
+
+interface IntrospectModule {
+  introspect: (dir: string) => Promise<IntrospectResult>
+}
+
+/** O domínio não é declarado no código: o caminho do arquivo é a melhor pista disponível. */
+function domainFromFile(file: string | undefined): string {
+  return file?.split('/').find((part) => part !== 'src' && part !== 'domains' && !part.endsWith('.ts')) ?? '—'
+}
+
+/**
+ * Estrutura do projeto: o manifest quando existe, senão a introspecção do próprio Opus.
+ *
+ * O fallback é do Opus de propósito. Reimplementar aqui o reconhecimento de `defineAction`
+ * seria recriar a duplicação que a ADR 0054 mandou desfazer — a lente apresenta, não é
+ * dona do vocabulário. Como o `introspect` ainda não cobre entidades e dicionários, essa
+ * leitura vem menor, e é o `source` que conta isso à tela.
+ */
+export async function inspectStructure(options: { manifest: string; dir: string }): Promise<Structure | null> {
+  const fromManifest = readStructure(options.manifest)
+  if (fromManifest !== null) return fromManifest
+
+  const { module } = await resolveOpusModule<IntrospectModule>(options.dir, 'introspect', async () => {
+    // @ts-expect-error — engine `.mjs` do Opus, sem tipos publicados.
+    return (await import('@softize/opus/introspect')) as IntrospectModule
+  })
+  let result: IntrospectResult
+  try {
+    result = await module.introspect(options.dir)
+  } catch {
+    return null
+  }
+
+  const structure: Structure = {
+    source: 'introspect',
+    domains: [],
+    actions: result.actions.map((action) => ({
+      domain: domainFromFile(action.file),
+      name: action.name ?? '—',
+      kind: action.kind ?? 'simple',
+      tags: [],
+      invalidates: [],
+    })),
+    entities: [],
+    dicts: [],
+    reactions: result.reactions.map((reaction) => ({
+      domain: domainFromFile(reaction.file),
+      name: reaction.name ?? '—',
+      on: reaction.on ?? [],
+    })),
+    schedules: result.schedules.map((schedule) => ({
+      domain: '—',
+      name: schedule.name ?? '—',
+      action: schedule.action ?? '—',
+      when: schedule.cron ?? schedule.every ?? '—',
+      enabled: true,
+    })),
+    permissions: [],
+  }
+  // Sem action encontrada, esta fonte não tem o que dizer — e "0 actions" quase nunca
+  // significa "o projeto não tem action". O `introspect` do Opus reconhece `defineAction`,
+  // mas ainda NÃO reconhece o split `defineContract` + `bindAction`, que é o padrão
+  // canônico do protocolo e o que este repositório usa: aqui ele enxerga 0 de 189. Devolver
+  // `null` faz a tela pedir `opus gen`, que é a ação útil; devolver a leitura mutilada
+  // sugeriria que o projeto declara quase nada.
+  if (structure.actions.length === 0) return null
+
+  const domains = new Map<string, StructureDomain>()
+  for (const action of structure.actions) {
+    const current = domains.get(action.domain) ?? { name: action.domain, actions: 0, entities: 0 }
+    current.actions += 1
+    domains.set(action.domain, current)
+  }
+  structure.domains = [...domains.values()].sort((a, b) => a.name.localeCompare(b.name))
+  return structure
 }
