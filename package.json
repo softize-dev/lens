@@ -1,0 +1,23 @@
+{
+  "name": "@grandbrasil/lens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./kysely": "./src/kysely.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@softize/opus": "12.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "kysely": "^0.27.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
