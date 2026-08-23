@@ -38,6 +38,9 @@ export interface StructureAction {
   description?: string
   permission?: string
   tags: string[]
+  /** Eventos que a action publica — a metade que abre a cadeia de causalidade. */
+  emits: string[]
+  /** Coleções que a action invalida ao concluir. */
   invalidates: string[]
 }
 
@@ -171,6 +174,7 @@ export function readStructure(path: string): Structure | null {
         ...optional('description', item['description'] ?? item['summary']),
         ...optional('permission', item['permission']),
         tags: list(item['tags']),
+        emits: list(item['emits']),
         invalidates: list(item['invalidates']),
       })
     }
@@ -342,6 +346,7 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       name: action.name ?? '—',
       kind: action.kind ?? 'simple',
       tags: [],
+      emits: action.emits ?? [],
       invalidates: [],
     })),
     entities: [],

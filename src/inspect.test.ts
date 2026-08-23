@@ -59,6 +59,32 @@ describe('inspeção de um alvo', () => {
     expect(result.project.root).toBe(dir)
   })
 
+  it('soma os alvos quando o repositório tem mais de um projeto Opus', async () => {
+    // Num monorepo a cara não declara domínio e o motor não tem tela: mirar num alvo só
+    // devolveria metade do projeto, em silêncio.
+    write('services/main/.opus/manifest.json', JSON.stringify(MANIFEST))
+    write(
+      'services/reports/.opus/manifest.json',
+      JSON.stringify({
+        domains: [
+          {
+            name: 'reports',
+            actions: [{ name: 'report.run', kind: 'simple', permission: 'sales' }],
+            entities: [],
+          },
+        ],
+      }),
+    )
+    write('base.json', JSON.stringify({ packages: {} }))
+
+    const result = await inspect({ root: dir, dirs: [join(dir, 'services/main'), join(dir, 'services/reports')] })
+
+    expect(result.structure?.actions.map((action) => action.name)).toEqual(['lead.create', 'report.run'])
+    expect(result.structure?.domains.map((domain) => domain.name)).toEqual(['sales', 'reports'])
+    // A permissão compartilhada aparece uma vez, com as duas actions que ela guarda.
+    expect(result.structure?.permissions).toEqual([{ name: 'sales', actions: ['lead.create', 'report.run'] }])
+  })
+
   it('sem manifest e sem declaração encontrada, responde null em vez de uma tela vazia', async () => {
     // Introspecção que não achou nada é indistinguível, na tela, de projeto sem projeção.
     // `null` faz a interface pedir `opus gen`, que é a ação útil.

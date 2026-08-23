@@ -11,7 +11,7 @@ const MANIFEST = {
       name: 'sales',
       description: 'Vendas.',
       actions: [
-        { name: 'lead.create', kind: 'form', description: 'Cria um lead.', permission: 'sales', tags: ['crm'], invalidates: ['lead.list'] },
+        { name: 'lead.create', kind: 'form', description: 'Cria um lead.', permission: 'sales', tags: ['crm'], emits: ['lead.created'], invalidates: ['lead.list'] },
         { name: 'lead.list', kind: 'list', tags: [] },
       ],
       entities: [
@@ -67,6 +67,7 @@ describe('lente de estrutura', () => {
       name: 'lead.create',
       kind: 'form',
       description: 'Cria um lead.',
+      emits: ['lead.created'],
       invalidates: ['lead.list'],
     })
     expect(structure.entities[0]).toMatchObject({ name: 'Lead', table: 'sales_leads', relationCount: 1 })
