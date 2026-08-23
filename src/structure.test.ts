@@ -11,7 +11,22 @@ const MANIFEST = {
       name: 'sales',
       description: 'Vendas.',
       actions: [
-        { name: 'lead.create', kind: 'form', description: 'Cria um lead.', permission: 'sales', tags: ['crm'], emits: ['lead.created'], invalidates: ['lead.list'] },
+        {
+          name: 'lead.create',
+          kind: 'form',
+          label: 'Novo lead',
+          description: 'Cria um lead.',
+          permission: 'sales',
+          tags: ['crm'],
+          emits: ['lead.created'],
+          invalidates: ['lead.list'],
+          input: {
+            type: 'object',
+            properties: { name: { type: 'string', description: 'Nome de quem procurou.' }, tags: { type: 'array', items: { type: 'string' } } },
+            required: ['name'],
+          },
+          output: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+        },
         { name: 'lead.list', kind: 'list', tags: [] },
       ],
       entities: [
@@ -26,10 +41,10 @@ const MANIFEST = {
           relations: [{ field: 'personId', target: 'Person' }],
         },
       ],
-      reactions: [{ name: 'lead.notify', on: ['lead.created'], description: 'Avisa o time.' }],
-      schedules: [{ name: 'lead.sweep', action: 'lead.scan', cron: '0 8 * * *', enabled: true }],
+      reactions: [{ name: 'lead.notify', on: ['lead.created'], description: 'Avisa o time.', hasDedup: true, timeout: 30, tags: ['crm'] }],
+      schedules: [{ name: 'lead.sweep', action: 'lead.scan', cron: '0 8 * * *', enabled: true, timezone: 'America/Sao_Paulo' }],
       // O manifest publica dicionários como MAPA, não como lista.
-      dicts: { leadStatus: { entries: [{ value: 'new' }, { value: 'lost' }] } },
+      dicts: { leadStatus: { entries: { new: { label: 'Novo', color: 'green' }, lost: { label: 'Perdido' } } } },
       subdomains: [
         { name: 'quotes', actions: [{ name: 'quote.create', kind: 'form', description: 'Cria proposta.' }], entities: [] },
       ],
@@ -67,14 +82,25 @@ describe('lente de estrutura', () => {
       name: 'lead.create',
       kind: 'form',
       description: 'Cria um lead.',
+      label: 'Novo lead',
       emits: ['lead.created'],
       invalidates: ['lead.list'],
     })
+    // O schema vira campo nomeado: é o que a tabela mostra, e `required` decide o opcional.
+    expect(structure.actions[0]?.input).toEqual([
+      { name: 'name', type: 'string', optional: false, doc: 'Nome de quem procurou.' },
+      { name: 'tags', type: 'string[]', optional: true },
+    ])
+    expect(structure.actions[0]?.output).toEqual([{ name: 'id', type: 'string', optional: false }])
     expect(structure.entities[0]).toMatchObject({ name: 'Lead', table: 'sales_leads', relationCount: 1 })
+    expect(structure.entities[0]?.relations).toEqual([{ field: 'personId', target: 'Person' }])
     expect(structure.entities[0]?.fields[0]).toMatchObject({ name: 'id', type: 'uuid', pk: true, doc: 'Identificador.' })
-    expect(structure.reactions[0]).toMatchObject({ name: 'lead.notify', on: ['lead.created'] })
-    expect(structure.schedules[0]).toMatchObject({ name: 'lead.sweep', action: 'lead.scan', when: '0 8 * * *' })
-    expect(structure.dicts[0]).toMatchObject({ name: 'leadStatus', entryCount: 2 })
+    expect(structure.reactions[0]).toMatchObject({ name: 'lead.notify', on: ['lead.created'], dedup: true, timeout: 30 })
+    expect(structure.schedules[0]).toMatchObject({ name: 'lead.sweep', action: 'lead.scan', when: '0 8 * * *', timezone: 'America/Sao_Paulo' })
+    expect(structure.dicts[0]?.entries).toEqual([
+      { key: 'new', label: 'Novo', color: 'green' },
+      { key: 'lost', label: 'Perdido' },
+    ])
     expect(structure.permissions).toEqual([{ name: 'sales', actions: ['lead.create'] }])
   })
 

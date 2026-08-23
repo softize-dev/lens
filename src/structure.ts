@@ -22,12 +22,32 @@ export interface StructureField {
   doc?: string
 }
 
+/** Campo de entrada ou saída de uma action, derivado do schema publicado no manifest. */
+export interface StructureParam {
+  name: string
+  type: string
+  optional: boolean
+  doc?: string
+}
+
+export interface StructureRelation {
+  field: string
+  target: string
+}
+
+export interface DictEntry {
+  key: string
+  label?: string
+  color?: string
+}
+
 export interface StructureEntity {
   domain: string
   name: string
   table?: string
   description?: string
   fields: StructureField[]
+  relations: StructureRelation[]
   relationCount: number
 }
 
@@ -36,12 +56,19 @@ export interface StructureAction {
   name: string
   kind: string
   description?: string
+  /** Rótulo e resumo de interface, quando a action os declara. */
+  label?: string
+  summary?: string
   permission?: string
+  /** Pré-condição declarativa; o runtime não a executa (ver `opus check`). */
+  requires?: string
   tags: string[]
   /** Eventos que a action publica — a metade que abre a cadeia de causalidade. */
   emits: string[]
   /** Coleções que a action invalida ao concluir. */
   invalidates: string[]
+  input: StructureParam[]
+  output: StructureParam[]
 }
 
 export interface StructureReaction {
@@ -49,6 +76,11 @@ export interface StructureReaction {
   name: string
   on: string[]
   description?: string
+  tags: string[]
+  /** Descarta repetição do mesmo evento antes de executar. */
+  dedup: boolean
+  timeout?: number
+  concurrency?: number
 }
 
 export interface StructureSchedule {
@@ -58,12 +90,15 @@ export interface StructureSchedule {
   when: string
   enabled: boolean
   description?: string
+  timezone?: string
+  tags: string[]
 }
 
 export interface StructureDict {
   domain: string
   name: string
   description?: string
+  entries: DictEntry[]
   entryCount: number
 }
 
@@ -115,6 +150,45 @@ const str = (value: unknown): string | undefined =>
 
 const list = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+
+/**
+ * Entrada e saída chegam como JSON Schema, que é a projeção honesta do contrato mas não
+ * é o que se lê numa tabela. A conversão achata o primeiro nível em campos nomeados —
+ * profundidade maior não cabe numa linha e não é o que a tela pergunta.
+ */
+function paramsOf(value: unknown): StructureParam[] {
+  if (value === null || typeof value !== 'object') return []
+  const schema = value as { properties?: Record<string, unknown>; required?: unknown }
+  const required = new Set(Array.isArray(schema.required) ? schema.required.filter((name): name is string => typeof name === 'string') : [])
+  return Object.entries(schema.properties ?? {}).map(([name, raw]) => {
+    const field = (raw ?? {}) as { type?: unknown; description?: unknown; items?: { type?: unknown } }
+    const base = typeof field.type === 'string' ? field.type : 'unknown'
+    const type = base === 'array' && typeof field.items?.type === 'string' ? `${field.items.type}[]` : base
+    return { name, type, optional: !required.has(name), ...optional('doc', field.description) }
+  })
+}
+
+function relationsOf(value: unknown): StructureRelation[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((raw) => {
+      const relation = (raw ?? {}) as { field?: unknown; target?: unknown }
+      return { field: str(relation.field) ?? '—', target: str(relation.target) ?? '—' }
+    })
+    .filter((relation) => relation.field !== '—' || relation.target !== '—')
+}
+
+/** Entradas de dicionário chegam em lista ou em mapa `chave → { label, color }`. */
+function dictEntries(value: unknown): DictEntry[] {
+  return entries(value).map(([key, raw]) => {
+    const entry = (raw ?? {}) as { key?: unknown; value?: unknown; label?: unknown; color?: unknown }
+    return {
+      key: str(entry.key) ?? str(entry.value) ?? key,
+      ...optional('label', entry.label),
+      ...optional('color', entry.color),
+    }
+  })
+}
 
 /** Aceita coleção em lista ou em mapa; devolve sempre pares chave/valor. */
 function entries(value: unknown): [string, unknown][] {
@@ -172,10 +246,15 @@ export function readStructure(path: string): Structure | null {
         name: str(item['name']) ?? '—',
         kind: str(item['kind']) ?? 'simple',
         ...optional('description', item['description'] ?? item['summary']),
+        ...optional('label', item['label']),
+        ...optional('summary', item['summary']),
         ...optional('permission', item['permission']),
+        ...optional('requires', item['requires']),
         tags: list(item['tags']),
         emits: list(item['emits']),
         invalidates: list(item['invalidates']),
+        input: paramsOf(item['input']),
+        output: paramsOf(item['output']),
       })
     }
 
@@ -194,6 +273,7 @@ export function readStructure(path: string): Structure | null {
           references: str(field['references']) ?? null,
           ...optional('doc', field['doc']),
         })),
+        relations: relationsOf(item['relations']),
         relationCount: Array.isArray(item['relations']) ? item['relations'].length : 0,
       })
     }
@@ -207,6 +287,7 @@ export function readStructure(path: string): Structure | null {
         domain: name,
         name: str(item['name']) ?? key,
         ...optional('description', item['description']),
+        entries: dictEntries(item['entries'] ?? item['values']),
         entryCount: Array.isArray(item['entries']) ? item['entries'].length : 0,
       })
     }
@@ -217,6 +298,10 @@ export function readStructure(path: string): Structure | null {
         name: str(item['name']) ?? '—',
         on: list(item['on']),
         ...optional('description', item['description']),
+        tags: list(item['tags']),
+        dedup: item['hasDedup'] === true,
+        ...(typeof item['timeout'] === 'number' ? { timeout: item['timeout'] } : {}),
+        ...(typeof item['concurrency'] === 'number' ? { concurrency: item['concurrency'] } : {}),
       })
     }
 
@@ -228,6 +313,8 @@ export function readStructure(path: string): Structure | null {
         when: str(item['cron']) ?? str(item['every']) ?? '—',
         enabled: item['enabled'] !== false,
         ...optional('description', item['description']),
+        ...optional('timezone', item['timezone']),
+        tags: list(item['tags']),
       })
     }
 
@@ -348,6 +435,8 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       tags: [],
       emits: action.emits ?? [],
       invalidates: [],
+      input: [],
+      output: [],
     })),
     entities: [],
     dicts: [],
@@ -355,6 +444,8 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       domain: domainFromFile(reaction.file),
       name: reaction.name ?? '—',
       on: reaction.on ?? [],
+      tags: [],
+      dedup: false,
     })),
     schedules: result.schedules.map((schedule) => ({
       domain: '—',
@@ -362,6 +453,7 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       action: schedule.action ?? '—',
       when: schedule.cron ?? schedule.every ?? '—',
       enabled: true,
+      tags: [],
     })),
     permissions: [],
   }
