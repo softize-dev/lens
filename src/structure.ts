@@ -63,6 +63,12 @@ export interface StructureDict {
   entryCount: number
 }
 
+/** Uma permissão do RBAC e o que ela protege. Derivada das actions, não declarada à parte. */
+export interface StructurePermission {
+  name: string
+  actions: string[]
+}
+
 export interface StructureDomain {
   name: string
   description?: string
@@ -79,6 +85,7 @@ export interface Structure {
   dicts: StructureDict[]
   reactions: StructureReaction[]
   schedules: StructureSchedule[]
+  permissions: StructurePermission[]
 }
 
 /** O manifest é dado gerado; a leitura aceita ausência de campo sem quebrar. */
@@ -134,6 +141,7 @@ export function readStructure(path: string): Structure | null {
     dicts: [],
     reactions: [],
     schedules: [],
+    permissions: [],
   }
 
   const visit = (domain: RawDomain, prefix: string): void => {
@@ -221,6 +229,19 @@ export function readStructure(path: string): Structure | null {
   }
 
   for (const domain of domains) visit(domain, '')
+
+  // Quem pode o quê é uma pergunta de leitura frequente, e a resposta já está espalhada
+  // pelas actions: agrupar aqui evita que cada tela refaça o agrupamento à mão.
+  const byPermission = new Map<string, string[]>()
+  for (const action of structure.actions) {
+    if (action.permission === undefined) continue
+    const current = byPermission.get(action.permission) ?? []
+    current.push(action.name)
+    byPermission.set(action.permission, current)
+  }
+  structure.permissions = [...byPermission.entries()]
+    .map(([name, actions]) => ({ name, actions: actions.sort() }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return structure
 }

@@ -74,6 +74,7 @@ describe('lente de estrutura', () => {
     expect(structure.reactions[0]).toMatchObject({ name: 'lead.notify', on: ['lead.created'] })
     expect(structure.schedules[0]).toMatchObject({ name: 'lead.sweep', action: 'lead.scan', when: '0 8 * * *' })
     expect(structure.dicts[0]).toMatchObject({ name: 'leadStatus', entryCount: 2 })
+    expect(structure.permissions).toEqual([{ name: 'sales', actions: ['lead.create'] }])
   })
 
   it('devolve null quando o projeto ainda não gerou a projeção', () => {

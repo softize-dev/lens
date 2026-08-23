@@ -24,6 +24,7 @@ import { aiInventory, type AiInventory } from './ai.ts'
 import { projectStatus, type ProjectStatus } from './project.ts'
 import { readStructure, type Structure } from './structure.ts'
 import { testInventory, type TestInventory } from './tests.ts'
+import { createSuiteRunner, type SuiteRunner } from './run.ts'
 
 export type { LensStore } from './store.ts'
 export type { KyselyLogOptions } from './kysely.ts'
@@ -34,10 +35,12 @@ export { docCoverage, readStructure } from './structure.ts'
 export { conformity, projectStatus } from './project.ts'
 export { aiInventory } from './ai.ts'
 export { testInventory } from './tests.ts'
+export { createSuiteRunner } from './run.ts'
 export type * from './structure.ts'
 export type * from './project.ts'
 export type * from './ai.ts'
 export type * from './tests.ts'
+export type * from './run.ts'
 
 /** Os adapters que a lente sabe observar. Os demais seguem intactos. */
 export interface InstrumentableAdapters {
@@ -82,6 +85,8 @@ export interface Lens {
   project(): ProjectStatus
   /** Arquivos de teste do alvo observado e o que eles mencionam. */
   tests(): TestInventory
+  /** Execução da suíte do alvo — assíncrona, uma por vez. */
+  suite: SuiteRunner
   /** Devolve os adapters decorados, ou os mesmos que recebeu quando desligada. */
   instrument<T extends InstrumentableAdapters>(adapters: T): T
   /** `log` para o construtor do Kysely; sem efeito quando a lente está desligada. */
@@ -123,6 +128,7 @@ export function createLens(options: LensOptions = {}): Lens {
     structure: () => readStructure(manifest),
     ai: () => aiInventory(repoRoot, [relative(repoRoot, target) === '' ? 'CLAUDE.md' : `${relative(repoRoot, target)}/CLAUDE.md`]),
     project: () => projectStatus(repoRoot, target),
+    suite: createSuiteRunner(target),
     tests: () => {
       const structure = readStructure(manifest)
       return testInventory(target, {
