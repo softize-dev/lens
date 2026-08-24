@@ -112,7 +112,11 @@ describe('lente de estrutura', () => {
     const coverage = docCoverage(readStructure(path)!)
 
     expect(coverage).toMatchObject({ total: 4, documented: 3 })
-    expect(coverage.gaps).toEqual([{ kind: 'action', domain: 'sales', name: 'lead.list' }])
     expect(coverage.fields).toEqual({ total: 2, documented: 1 })
+    // O campo sem doc entra na MESMA lista: era a lacuna que não aparecia em lugar nenhum.
+    expect(coverage.gaps).toEqual([
+      { kind: 'action', domain: 'sales', name: 'lead.list' },
+      { kind: 'field', domain: 'sales', name: 'Lead.phone' },
+    ])
   })
 })

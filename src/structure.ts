@@ -345,16 +345,19 @@ export function readStructure(path: string): Structure | null {
 }
 
 export interface DocGap {
-  kind: 'action' | 'entity'
+  kind: 'action' | 'entity' | 'field'
   domain: string
+  /** Para campo, `Entidade.campo` — o nome sozinho não localiza nada. */
   name: string
 }
 
 export interface DocCoverage {
   total: number
   documented: number
+  /** Toda lacuna, de declaração e de campo — é a lista que diz o que fazer a seguir. */
   gaps: DocGap[]
-  /** Campos de entidade sem documentação — sinal mais fino que o total por declaração. */
+  /** Campos de entidade, contados à parte: são muito mais numerosos que as declarações
+   *  e afundariam a porcentagem que mede action e entidade. */
   fields: { total: number; documented: number }
 }
 
@@ -371,12 +374,20 @@ export function docCoverage(structure: Structure): DocCoverage {
     if (entity.description === undefined) gaps.push({ kind: 'entity', domain: entity.domain, name: entity.name })
   }
   const total = structure.actions.length + structure.entities.length
-  const fields = structure.entities.flatMap((entity) => entity.fields)
+  const documented = total - gaps.length
+
+  // O campo sem doc é a lacuna mais comum e a que estava invisível: a cobertura por
+  // declaração pode marcar 100% enquanto dezenas de campos seguem sem explicação.
+  const fields = structure.entities.flatMap((entity) => entity.fields.map((field) => ({ entity, field })))
+  for (const { entity, field } of fields) {
+    if (field.doc === undefined) gaps.push({ kind: 'field', domain: entity.domain, name: `${entity.name}.${field.name}` })
+  }
+
   return {
     total,
-    documented: total - gaps.length,
+    documented,
     gaps,
-    fields: { total: fields.length, documented: fields.filter((field) => field.doc !== undefined).length },
+    fields: { total: fields.length, documented: fields.filter(({ field }) => field.doc !== undefined).length },
   }
 }
 
