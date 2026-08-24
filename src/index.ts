@@ -13,11 +13,12 @@ import type { LogEvent } from 'kysely'
 import type {
   AiAdapter,
   AuditSink,
+  CacheAdapter,
   EventBusAdapter,
   ObservabilityAdapter,
   QueueAdapter,
 } from '@softize/opus/core'
-import { lensAi, lensAudit, lensEvents, lensObservability, lensQueue } from './adapters.ts'
+import { lensAi, lensAudit, lensCache, lensEvents, lensObservability, lensQueue } from './adapters.ts'
 import { fileStore, type LensStore } from './store.ts'
 import { lensKyselyLog, type KyselyLogOptions } from './kysely.ts'
 import { aiInventory, type AiInventory } from './ai.ts'
@@ -50,6 +51,7 @@ export interface InstrumentableAdapters {
   audit?: AuditSink | undefined
   queue?: QueueAdapter | undefined
   eventBus?: EventBusAdapter | undefined
+  cache?: CacheAdapter | undefined
   ai?: AiAdapter | undefined
 }
 
@@ -150,6 +152,7 @@ export function createLens(options: LensOptions = {}): Lens {
         audit: lensAudit(adapters.audit),
         ...(adapters.queue !== undefined ? { queue: lensQueue(adapters.queue) } : {}),
         ...(adapters.eventBus !== undefined ? { eventBus: lensEvents(adapters.eventBus) } : {}),
+        ...(adapters.cache !== undefined ? { cache: lensCache(adapters.cache) } : {}),
         ...(adapters.ai !== undefined ? { ai: lensAi(adapters.ai) } : {}),
       }
     },

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { AuditRecord, ObservabilityOperation, QueueAdapter, TraceContext } from '@softize/opus/core'
 import type { LogEvent } from 'kysely'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { lensAudit, lensObservability, lensQueue } from './adapters.ts'
+import { lensAudit, lensCache, lensObservability, lensQueue } from './adapters.ts'
 import { createLens } from './index.ts'
 import { lensKyselyLog } from './kysely.ts'
 import { fileStore, type LensStore } from './store.ts'
@@ -154,6 +154,32 @@ describe('decoradores da lente', () => {
     expect(record?.entries).toContainEqual(
       expect.objectContaining({ kind: 'job', jobId: 'job-1', queue: 'communications' }),
     )
+  })
+
+  it('registra acerto e ausência do cache pelo retorno da porta', async () => {
+    const store2 = new Map<string, unknown>()
+    const cache = lensCache({
+      name: 'memory',
+      kind: 'cache',
+      get: async <T>(key: string) => (store2.has(key) ? (store2.get(key) as T) : null),
+      set: async (key, value) => { store2.set(key, value) },
+      delete: async (key) => { store2.delete(key) },
+    })
+
+    await lensObservability(store).runInSpan(actionSpan('lead.summary'), async () => {
+      await cache.get('lead:1')
+      await cache.set('lead:1', 'resumo', { ttlSeconds: 60 })
+      await cache.get('lead:1')
+      return { ok: true, data: {} }
+    })
+
+    const record = store.get(store.list()[0]!.id)
+    const cacheEntries = record?.entries.filter((entry) => entry.kind === 'cache')
+    expect(cacheEntries).toHaveLength(3)
+    // O miss é o `null` da porta; o acerto é o valor. A lente não pede métrica ao driver.
+    expect(cacheEntries?.[0]).toMatchObject({ operation: 'get', key: 'lead:1', hit: false })
+    expect(cacheEntries?.[1]).toMatchObject({ operation: 'set', key: 'lead:1', ttlSeconds: 60 })
+    expect(cacheEntries?.[2]).toMatchObject({ operation: 'get', hit: true })
   })
 
   it('guarda a consulta sem parâmetros por padrão e ignora consulta fora de registro', async () => {

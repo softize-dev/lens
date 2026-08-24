@@ -54,6 +54,17 @@ export interface LensEventEntry {
   sourceActionId?: string
 }
 
+export interface LensCacheEntry {
+  kind: 'cache'
+  operation: 'get' | 'set' | 'delete'
+  key: string
+  /** Só na leitura: acertou o cache ou não. O miss é o `null` que a porta devolve. */
+  hit?: boolean
+  at: number
+  durationMs: number
+  ttlSeconds?: number
+}
+
 export interface LensAiEntry {
   kind: 'ai'
   operation: 'complete' | 'extract'
@@ -65,6 +76,7 @@ export interface LensAiEntry {
 
 export type LensEntry =
   | LensExecutionEntry
+  | LensCacheEntry
   | LensQueryEntry
   | LensJobEntry
   | LensEventEntry
