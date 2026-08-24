@@ -10,6 +10,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type {
   AiAdapter,
+  CacheAdapter,
+  CacheSetOptions,
   AuditRecord,
   AuditSink,
   DomainEvent,
@@ -127,6 +129,42 @@ export function lensAudit(inner?: AuditSink): AuditSink {
       annotate({ provenance: record.provenance, ...(requestId !== undefined ? { requestId } : {}) })
       await inner?.emit(record)
     },
+  }
+}
+
+/**
+ * Cache: a leitura entra no registro dizendo se acertou. O acerto se lê do retorno da
+ * porta — `null` é o miss —, então a lente não precisa de métrica declarada por fora, e o
+ * driver não precisa saber que está sendo observado.
+ */
+export function lensCache(inner: CacheAdapter): CacheAdapter {
+  const observe = async <T>(
+    operation: 'get' | 'set' | 'delete',
+    key: string,
+    run: () => Promise<T>,
+    extra: { ttlSeconds?: number } = {},
+  ): Promise<T> => {
+    const at = Date.now()
+    const value = await run()
+    addEntry({
+      kind: 'cache',
+      operation,
+      key,
+      ...(operation === 'get' ? { hit: value !== null } : {}),
+      ...(extra.ttlSeconds !== undefined ? { ttlSeconds: extra.ttlSeconds } : {}),
+      at,
+      durationMs: Date.now() - at,
+    })
+    return value
+  }
+  return {
+    ...inner,
+    name: 'lens',
+    kind: 'cache',
+    get: <T>(key: string) => observe('get', key, () => inner.get<T>(key)),
+    set: <T>(key: string, value: T, opts?: CacheSetOptions) =>
+      observe('set', key, () => inner.set(key, value, opts), opts ?? {}),
+    delete: (key: string) => observe('delete', key, () => inner.delete(key)),
   }
 }
 
