@@ -29,7 +29,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@softize/opus": "12.3.0"
+    "@softize/opus": "12.4.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
