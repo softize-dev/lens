@@ -1,8 +1,25 @@
 {
-  "name": "@softize/lens",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@softize/opus-lens",
+  "version": "0.1.0",
   "type": "module",
+  "description": "Lente de desenvolvimento para projetos Opus: o que uma requisição fez e o que o projeto declara.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/softize-dev/opus-lens.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./kysely": "./src/kysely.ts"
