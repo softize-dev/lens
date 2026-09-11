@@ -19,7 +19,7 @@ const MANIFEST = {
       name: 'sales',
       actions: [{ name: 'lead.create', kind: 'form', description: 'Cria.', permission: 'sales' }],
       entities: [{ name: 'Lead', table: 'sales_leads', description: 'Interesse.', fields: [], relations: [] }],
-      dataProducts: [{ id: 'sales.leads', version: 1, description: 'Leads.', sources: [], entities: ['Lead'], access: { contexts: [], organizationalScopes: [] }, interfaces: ['lead.create'] }],
+      dataProducts: [{ id: 'sales.leads', version: 1, description: 'Leads.', sources: [], entities: ['Lead'], access: { permissionContexts: [], organizationalScopes: [] }, interfaces: ['lead.create'] }],
     },
   ],
 }

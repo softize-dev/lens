@@ -127,7 +127,7 @@ export interface StructureDataProduct {
   nature?: string
   sources: StructureDataProductSource[]
   entities: string[]
-  contexts: string[]
+  permissionContexts: string[]
   organizationalScopes: string[]
   interfaces: string[]
   status: 'active' | 'deprecated'
@@ -342,7 +342,7 @@ export function readStructure(path: string): Structure | null {
         ...optional('nature', item['nature']),
         sources,
         entities: list(item['entities']),
-        contexts: list(access['contexts']),
+        permissionContexts: list(access['permissionContexts'] ?? access['contexts']),
         organizationalScopes: list(access['organizationalScopes']),
         interfaces: list(item['interfaces']),
         status: item['status'] === 'deprecated' ? 'deprecated' : 'active',
@@ -542,7 +542,7 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       version: product.version ?? null,
       sources: [],
       entities: product.entities ?? [],
-      contexts: [],
+      permissionContexts: [],
       organizationalScopes: [],
       interfaces: product.interfaces ?? [],
       status: 'active',

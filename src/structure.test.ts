@@ -53,7 +53,7 @@ const MANIFEST = {
           nature: 'real',
           sources: [{ id: 'followize', label: 'Followize' }],
           entities: ['Lead'],
-          access: { contexts: ['sales'], organizationalScopes: ['unit', 'team'] },
+          access: { permissionContexts: ['sales'], organizationalScopes: ['unit', 'team'] },
           interfaces: ['lead.list'],
           status: 'active',
         },
@@ -112,7 +112,13 @@ describe('lente de estrutura', () => {
     expect(structure.entities[0]).toMatchObject({ name: 'Lead', table: 'sales_leads', relationCount: 1 })
     expect(structure.entities[0]?.relations).toEqual([{ field: 'personId', target: 'Person' }])
     expect(structure.entities[0]?.fields[0]).toMatchObject({ name: 'id', type: 'uuid', pk: true, doc: 'Identificador.' })
-    expect(structure.dataProducts[0]).toMatchObject({ id: 'sales.leads', entities: ['Lead'], interfaces: ['lead.list'] })
+    expect(structure.dataProducts[0]).toMatchObject({
+      id: 'sales.leads',
+      entities: ['Lead'],
+      permissionContexts: ['sales'],
+      organizationalScopes: ['unit', 'team'],
+      interfaces: ['lead.list'],
+    })
     expect(structure.lineage).toEqual([
       { kind: 'source-product', from: 'followize', to: 'sales.leads' },
       { kind: 'entity-product', from: 'Lead', to: 'sales.leads' },
@@ -125,6 +131,19 @@ describe('lente de estrutura', () => {
       { key: 'lost', label: 'Perdido' },
     ])
     expect(structure.permissions).toEqual([{ name: 'sales', actions: ['lead.create'] }])
+  })
+
+  it('lê o alias legado contexts sem reintroduzi-lo na saída da lente', () => {
+    const manifest = structuredClone(MANIFEST)
+    const access = manifest.domains[0]!.dataProducts[0]!.access as Record<string, unknown>
+    access.contexts = access.permissionContexts
+    delete access.permissionContexts
+    writeFileSync(path, JSON.stringify(manifest))
+
+    const product = readStructure(path)!.dataProducts[0]!
+
+    expect(product.permissionContexts).toEqual(['sales'])
+    expect(product).not.toHaveProperty('contexts')
   })
 
   it('devolve null quando o projeto ainda não gerou a projeção', () => {
