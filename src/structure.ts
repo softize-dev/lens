@@ -148,6 +148,15 @@ export interface StructureDomain {
   dataProducts: number
 }
 
+export interface StructurePresentation {
+  id: string
+  title: string
+  bodyAction: string
+  actions: string[]
+  /** Artefato integral projetado pelo Opus; a Lens não reconstrói o blueprint. */
+  definition: Record<string, unknown>
+}
+
 export interface Structure {
   /**
    * De onde as declarações vieram. `manifest` é a projeção completa, com documentação de
@@ -167,6 +176,7 @@ export interface Structure {
   reactions: StructureReaction[]
   schedules: StructureSchedule[]
   permissions: StructurePermission[]
+  presentations: StructurePresentation[]
 }
 
 /** O manifest é dado gerado; a leitura aceita ausência de campo sem quebrar. */
@@ -245,9 +255,9 @@ function optional(key: string, value: unknown): Record<string, string> {
 }
 
 export function readStructure(path: string): Structure | null {
-  let raw: { opusVersion?: unknown; domains?: unknown }
+  let raw: { opusVersion?: unknown; domains?: unknown; presentations?: unknown }
   try {
-    raw = JSON.parse(readFileSync(path, 'utf8')) as { opusVersion?: unknown; domains?: unknown }
+    raw = JSON.parse(readFileSync(path, 'utf8')) as { opusVersion?: unknown; domains?: unknown; presentations?: unknown }
   } catch {
     return null
   }
@@ -265,6 +275,23 @@ export function readStructure(path: string): Structure | null {
     reactions: [],
     schedules: [],
     permissions: [],
+    presentations: [],
+  }
+
+  for (const [, value] of entries(raw.presentations)) {
+    const definition = (value ?? {}) as Record<string, unknown>
+    const body = (definition['body'] ?? {}) as Record<string, unknown>
+    const commands = Array.isArray(definition['actions']) ? (definition['actions'] as Record<string, unknown>[]) : []
+    structure.presentations.push({
+      id: str(definition['id']) ?? '—',
+      title: str(definition['title']) ?? '—',
+      bodyAction: str(body['action']) ?? '—',
+      actions: commands.flatMap((command) => {
+        const name = str(command['action'])
+        return name === undefined ? [] : [name]
+      }),
+      definition,
+    })
   }
 
   const visit = (domain: RawDomain, prefix: string): void => {
@@ -568,6 +595,7 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       tags: [],
     })),
     permissions: [],
+    presentations: [],
   }
   // Sem action encontrada, esta fonte não tem o que dizer — e "0 actions" quase nunca
   // significa "o projeto não tem action". O `introspect` do Opus reconhece `defineAction`,

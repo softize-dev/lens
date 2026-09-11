@@ -14,6 +14,15 @@ const write = (relative: string, content: string): void => {
 
 const MANIFEST = {
   opusVersion: '12.3.0',
+  presentations: [
+    {
+      schemaVersion: 1,
+      id: 'leads',
+      title: 'Leads',
+      body: { action: 'lead.list', input: {} },
+      actions: [],
+    },
+  ],
   domains: [
     {
       name: 'sales',
@@ -82,6 +91,7 @@ describe('inspeção de um alvo', () => {
 
     expect(result.structure?.actions.map((action) => action.name)).toEqual(['lead.create', 'report.run'])
     expect(result.structure?.dataProducts.map((product) => product.id)).toEqual(['sales.leads'])
+    expect(result.structure?.presentations.map((presentation) => presentation.id)).toEqual(['leads'])
     expect(result.structure?.domains.map((domain) => domain.name)).toEqual(['sales', 'reports'])
     // A permissão compartilhada aparece uma vez, com as duas actions que ela guarda.
     expect(result.structure?.permissions).toEqual([{ name: 'sales', actions: ['lead.create', 'report.run'] }])

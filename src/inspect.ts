@@ -50,6 +50,7 @@ function merge(parts: Structure[]): Structure | null {
     dicts: parts.flatMap((part) => part.dicts),
     reactions: parts.flatMap((part) => part.reactions),
     schedules: parts.flatMap((part) => part.schedules),
+    presentations: parts.flatMap((part) => part.presentations),
     permissions: [],
   }
   const byPermission = new Map<string, string[]>()

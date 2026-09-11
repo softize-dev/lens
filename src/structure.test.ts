@@ -6,6 +6,15 @@ import { docCoverage, readStructure } from './structure.ts'
 
 const MANIFEST = {
   opusVersion: '12.3.0',
+  presentations: [
+    {
+      schemaVersion: 1,
+      id: 'leads',
+      title: 'Leads',
+      body: { action: 'lead.list', input: {} },
+      actions: [{ action: 'lead.create', placement: 'header', input: {} }],
+    },
+  ],
   domains: [
     {
       name: 'sales',
@@ -131,6 +140,15 @@ describe('lente de estrutura', () => {
       { key: 'lost', label: 'Perdido' },
     ])
     expect(structure.permissions).toEqual([{ name: 'sales', actions: ['lead.create'] }])
+    expect(structure.presentations).toEqual([
+      expect.objectContaining({
+        id: 'leads',
+        title: 'Leads',
+        bodyAction: 'lead.list',
+        actions: ['lead.create'],
+        definition: MANIFEST.presentations[0],
+      }),
+    ])
   })
 
   it('lê o alias legado contexts sem reintroduzi-lo na saída da lente', () => {

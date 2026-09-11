@@ -1,8 +1,8 @@
 # Opus Lens
 
-> A série 0.4 usa os contratos de Presentation e Produtos de Dados do `@softize/opus` 16.
+> A série 0.5 usa os contratos de Presentation e Produtos de Dados do `@softize/opus` 16.1.
 
-> **Status:** v0.4 — leitura estática, Produtos de Dados e telemetria local. Uma versão, sem semver por módulo.
+> **Status:** v0.5 — leitura estática, Presentations, Produtos de Dados e telemetria local. Uma versão, sem semver por módulo.
 
 A lente de desenvolvimento de um projeto Opus. Responde duas perguntas que costumam ficar sem
 resposta enquanto se programa: **o que esta requisição fez** e **o que este projeto declara**.
@@ -23,7 +23,7 @@ ecossistema PHP.
 **Da declaração**, a partir do `.opus/manifest.json` que o `opus gen` publica:
 
 - domínios, actions (com entrada, saída, permissão e o que emitem e invalidam), entidades e seus
-  campos, Produtos de Dados, dicionários, reactions e schedules;
+  campos, Presentations, Produtos de Dados, dicionários, reactions e schedules;
 - linhagem declarada entre Fontes, entities, Produtos de Dados e suas Actions de interface;
 - cobertura de documentação, conformidade pela régua do Opus **do projeto observado**, inventário
   de testes e a configuração de agentes que o repositório carrega.
