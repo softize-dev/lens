@@ -45,6 +45,8 @@ function merge(parts: Structure[]): Structure | null {
     domains: parts.flatMap((part) => part.domains),
     actions: parts.flatMap((part) => part.actions),
     entities: parts.flatMap((part) => part.entities),
+    dataProducts: parts.flatMap((part) => part.dataProducts),
+    lineage: parts.flatMap((part) => part.lineage),
     dicts: parts.flatMap((part) => part.dicts),
     reactions: parts.flatMap((part) => part.reactions),
     schedules: parts.flatMap((part) => part.schedules),

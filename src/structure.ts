@@ -108,11 +108,44 @@ export interface StructurePermission {
   actions: string[]
 }
 
+export interface StructureDataProductSource {
+  id: string
+  label: string
+  description?: string
+}
+
+/** Produto de Dados governado publicado pelo Opus. */
+export interface StructureDataProduct {
+  domain: string
+  id: string
+  version: number | null
+  label?: string
+  description?: string
+  owner?: string
+  grain?: string
+  classification?: string
+  nature?: string
+  sources: StructureDataProductSource[]
+  entities: string[]
+  contexts: string[]
+  organizationalScopes: string[]
+  interfaces: string[]
+  status: 'active' | 'deprecated'
+  replacedBy?: string
+}
+
+export interface StructureLineageEdge {
+  kind: 'source-product' | 'entity-product' | 'product-action'
+  from: string
+  to: string
+}
+
 export interface StructureDomain {
   name: string
   description?: string
   actions: number
   entities: number
+  dataProducts: number
 }
 
 export interface Structure {
@@ -127,6 +160,9 @@ export interface Structure {
   domains: StructureDomain[]
   actions: StructureAction[]
   entities: StructureEntity[]
+  dataProducts: StructureDataProduct[]
+  /** Linhagem derivada das declarações, sem inferir relações pelo nome. */
+  lineage: StructureLineageEdge[]
   dicts: StructureDict[]
   reactions: StructureReaction[]
   schedules: StructureSchedule[]
@@ -139,6 +175,7 @@ interface RawDomain {
   description?: unknown
   actions?: unknown[]
   entities?: unknown[]
+  dataProducts?: unknown[]
   dicts?: unknown
   reactions?: unknown[]
   schedules?: unknown
@@ -222,6 +259,8 @@ export function readStructure(path: string): Structure | null {
     domains: [],
     actions: [],
     entities: [],
+    dataProducts: [],
+    lineage: [],
     dicts: [],
     reactions: [],
     schedules: [],
@@ -232,12 +271,14 @@ export function readStructure(path: string): Structure | null {
     const name = prefix + (str(domain.name) ?? '—')
     const actions = Array.isArray(domain.actions) ? domain.actions : []
     const entities = Array.isArray(domain.entities) ? domain.entities : []
+    const dataProducts = Array.isArray(domain.dataProducts) ? domain.dataProducts : []
 
     structure.domains.push({
       name,
       ...optional('description', domain.description),
       actions: actions.length,
       entities: entities.length,
+      dataProducts: dataProducts.length,
     })
 
     for (const item of actions as Record<string, unknown>[]) {
@@ -276,6 +317,47 @@ export function readStructure(path: string): Structure | null {
         relations: relationsOf(item['relations']),
         relationCount: Array.isArray(item['relations']) ? item['relations'].length : 0,
       })
+    }
+
+    for (const item of dataProducts as Record<string, unknown>[]) {
+      const id = str(item['id']) ?? '—'
+      const access = (item['access'] ?? {}) as Record<string, unknown>
+      const sources = (Array.isArray(item['sources']) ? item['sources'] : []).map((rawSource) => {
+        const source = (rawSource ?? {}) as Record<string, unknown>
+        return {
+          id: str(source['id']) ?? '—',
+          label: str(source['label']) ?? str(source['id']) ?? '—',
+          ...optional('description', source['description']),
+        }
+      })
+      const product: StructureDataProduct = {
+        domain: name,
+        id,
+        version: typeof item['version'] === 'number' ? item['version'] : null,
+        ...optional('label', item['label']),
+        ...optional('description', item['description']),
+        ...optional('owner', item['owner']),
+        ...optional('grain', item['grain']),
+        ...optional('classification', item['classification']),
+        ...optional('nature', item['nature']),
+        sources,
+        entities: list(item['entities']),
+        contexts: list(access['contexts']),
+        organizationalScopes: list(access['organizationalScopes']),
+        interfaces: list(item['interfaces']),
+        status: item['status'] === 'deprecated' ? 'deprecated' : 'active',
+        ...optional('replacedBy', item['replacedBy']),
+      }
+      structure.dataProducts.push(product)
+      for (const source of product.sources) {
+        structure.lineage.push({ kind: 'source-product', from: source.id, to: product.id })
+      }
+      for (const entity of product.entities) {
+        structure.lineage.push({ kind: 'entity-product', from: entity, to: product.id })
+      }
+      for (const action of product.interfaces) {
+        structure.lineage.push({ kind: 'product-action', from: product.id, to: action })
+      }
     }
 
     // Dicionários chegam como MAPA (`{ nome: definição }`), não como lista — as demais
@@ -345,7 +427,7 @@ export function readStructure(path: string): Structure | null {
 }
 
 export interface DocGap {
-  kind: 'action' | 'entity' | 'field'
+  kind: 'action' | 'entity' | 'data-product' | 'field'
   domain: string
   /** Para campo, `Entidade.campo` — o nome sozinho não localiza nada. */
   name: string
@@ -373,7 +455,10 @@ export function docCoverage(structure: Structure): DocCoverage {
   for (const entity of structure.entities) {
     if (entity.description === undefined) gaps.push({ kind: 'entity', domain: entity.domain, name: entity.name })
   }
-  const total = structure.actions.length + structure.entities.length
+  for (const product of structure.dataProducts) {
+    if (product.description === undefined) gaps.push({ kind: 'data-product', domain: product.domain, name: product.id })
+  }
+  const total = structure.actions.length + structure.entities.length + structure.dataProducts.length
   const documented = total - gaps.length
 
   // O campo sem doc é a lacuna mais comum e a que estava invisível: a cobertura por
@@ -402,6 +487,7 @@ interface IntrospectResult {
   actions: IntrospectAction[]
   reactions: { name?: string | null; on?: string[]; file?: string }[]
   schedules: { name?: string | null; action?: string | null; cron?: string | null; every?: string | null }[]
+  dataProducts?: { id?: string | null; version?: number | null; entities?: string[]; interfaces?: string[]; file?: string }[]
 }
 
 interface IntrospectModule {
@@ -450,6 +536,21 @@ export async function inspectStructure(options: { manifest: string; dir: string 
       output: [],
     })),
     entities: [],
+    dataProducts: (result.dataProducts ?? []).map((product) => ({
+      domain: domainFromFile(product.file),
+      id: product.id ?? '—',
+      version: product.version ?? null,
+      sources: [],
+      entities: product.entities ?? [],
+      contexts: [],
+      organizationalScopes: [],
+      interfaces: product.interfaces ?? [],
+      status: 'active',
+    })),
+    lineage: (result.dataProducts ?? []).flatMap((product) => [
+      ...(product.entities ?? []).map((entity): StructureLineageEdge => ({ kind: 'entity-product', from: entity, to: product.id ?? '—' })),
+      ...(product.interfaces ?? []).map((action): StructureLineageEdge => ({ kind: 'product-action', from: product.id ?? '—', to: action })),
+    ]),
     dicts: [],
     reactions: result.reactions.map((reaction) => ({
       domain: domainFromFile(reaction.file),
@@ -474,13 +575,18 @@ export async function inspectStructure(options: { manifest: string; dir: string 
   // canônico do protocolo e o que este repositório usa: aqui ele enxerga 0 de 189. Devolver
   // `null` faz a tela pedir `opus gen`, que é a ação útil; devolver a leitura mutilada
   // sugeriria que o projeto declara quase nada.
-  if (structure.actions.length === 0) return null
+  if (structure.actions.length === 0 && structure.dataProducts.length === 0) return null
 
   const domains = new Map<string, StructureDomain>()
   for (const action of structure.actions) {
-    const current = domains.get(action.domain) ?? { name: action.domain, actions: 0, entities: 0 }
+    const current = domains.get(action.domain) ?? { name: action.domain, actions: 0, entities: 0, dataProducts: 0 }
     current.actions += 1
     domains.set(action.domain, current)
+  }
+  for (const product of structure.dataProducts) {
+    const current = domains.get(product.domain) ?? { name: product.domain, actions: 0, entities: 0, dataProducts: 0 }
+    current.dataProducts += 1
+    domains.set(product.domain, current)
   }
   structure.domains = [...domains.values()].sort((a, b) => a.name.localeCompare(b.name))
   return structure

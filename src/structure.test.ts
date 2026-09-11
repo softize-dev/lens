@@ -41,6 +41,23 @@ const MANIFEST = {
           relations: [{ field: 'personId', target: 'Person' }],
         },
       ],
+      dataProducts: [
+        {
+          id: 'sales.leads',
+          version: 1,
+          label: 'Leads',
+          description: 'Leads e seus resultados comerciais.',
+          owner: 'Vendas',
+          grain: 'Um lead.',
+          classification: 'internal',
+          nature: 'real',
+          sources: [{ id: 'followize', label: 'Followize' }],
+          entities: ['Lead'],
+          access: { contexts: ['sales'], organizationalScopes: ['unit', 'team'] },
+          interfaces: ['lead.list'],
+          status: 'active',
+        },
+      ],
       reactions: [{ name: 'lead.notify', on: ['lead.created'], description: 'Avisa o time.', hasDedup: true, timeout: 30, tags: ['crm'] }],
       schedules: [{ name: 'lead.sweep', action: 'lead.scan', cron: '0 8 * * *', enabled: true, timezone: 'America/Sao_Paulo' }],
       // O manifest publica dicionários como MAPA, não como lista.
@@ -72,8 +89,8 @@ describe('lente de estrutura', () => {
     expect(structure.source).toBe('manifest')
     expect(structure.opusVersion).toBe('12.3.0')
     expect(structure.domains).toEqual([
-      { name: 'sales', description: 'Vendas.', actions: 2, entities: 1 },
-      { name: 'sales/quotes', actions: 1, entities: 0 },
+      { name: 'sales', description: 'Vendas.', actions: 2, entities: 1, dataProducts: 1 },
+      { name: 'sales/quotes', actions: 1, entities: 0, dataProducts: 0 },
     ])
     // Subdomínio some em silêncio se a leitura não descer: o total tem que incluí-lo.
     expect(structure.actions.map((action) => action.name)).toContain('quote.create')
@@ -95,6 +112,12 @@ describe('lente de estrutura', () => {
     expect(structure.entities[0]).toMatchObject({ name: 'Lead', table: 'sales_leads', relationCount: 1 })
     expect(structure.entities[0]?.relations).toEqual([{ field: 'personId', target: 'Person' }])
     expect(structure.entities[0]?.fields[0]).toMatchObject({ name: 'id', type: 'uuid', pk: true, doc: 'Identificador.' })
+    expect(structure.dataProducts[0]).toMatchObject({ id: 'sales.leads', entities: ['Lead'], interfaces: ['lead.list'] })
+    expect(structure.lineage).toEqual([
+      { kind: 'source-product', from: 'followize', to: 'sales.leads' },
+      { kind: 'entity-product', from: 'Lead', to: 'sales.leads' },
+      { kind: 'product-action', from: 'sales.leads', to: 'lead.list' },
+    ])
     expect(structure.reactions[0]).toMatchObject({ name: 'lead.notify', on: ['lead.created'], dedup: true, timeout: 30 })
     expect(structure.schedules[0]).toMatchObject({ name: 'lead.sweep', action: 'lead.scan', when: '0 8 * * *', timezone: 'America/Sao_Paulo' })
     expect(structure.dicts[0]?.entries).toEqual([
@@ -111,7 +134,7 @@ describe('lente de estrutura', () => {
   it('aponta a declaração sem documentação, incluindo o campo', () => {
     const coverage = docCoverage(readStructure(path)!)
 
-    expect(coverage).toMatchObject({ total: 4, documented: 3 })
+    expect(coverage).toMatchObject({ total: 5, documented: 4 })
     expect(coverage.fields).toEqual({ total: 2, documented: 1 })
     // O campo sem doc entra na MESMA lista: era a lacuna que não aparecia em lugar nenhum.
     expect(coverage.gaps).toEqual([

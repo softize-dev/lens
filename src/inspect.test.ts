@@ -19,6 +19,7 @@ const MANIFEST = {
       name: 'sales',
       actions: [{ name: 'lead.create', kind: 'form', description: 'Cria.', permission: 'sales' }],
       entities: [{ name: 'Lead', table: 'sales_leads', description: 'Interesse.', fields: [], relations: [] }],
+      dataProducts: [{ id: 'sales.leads', version: 1, description: 'Leads.', sources: [], entities: ['Lead'], access: { contexts: [], organizationalScopes: [] }, interfaces: ['lead.create'] }],
     },
   ],
 }
@@ -42,7 +43,7 @@ describe('inspeção de um alvo', () => {
     const result = await inspect({ root: dir })
 
     expect(result.structure).toMatchObject({ source: 'manifest' })
-    expect(result.docs).toMatchObject({ total: 2, documented: 2 })
+    expect(result.docs).toMatchObject({ total: 3, documented: 3 })
     expect(result.ai.agents).toHaveLength(1)
     expect(result.project.packages[0]).toMatchObject({ name: '@softize/opus', applied: '12.3.0' })
     expect(result.tests).toMatchObject({ total: 1, cases: 1 })
@@ -80,6 +81,7 @@ describe('inspeção de um alvo', () => {
     const result = await inspect({ root: dir, dirs: [join(dir, 'services/main'), join(dir, 'services/reports')] })
 
     expect(result.structure?.actions.map((action) => action.name)).toEqual(['lead.create', 'report.run'])
+    expect(result.structure?.dataProducts.map((product) => product.id)).toEqual(['sales.leads'])
     expect(result.structure?.domains.map((domain) => domain.name)).toEqual(['sales', 'reports'])
     // A permissão compartilhada aparece uma vez, com as duas actions que ela guarda.
     expect(result.structure?.permissions).toEqual([{ name: 'sales', actions: ['lead.create', 'report.run'] }])

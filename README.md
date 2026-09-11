@@ -21,7 +21,8 @@ ecossistema PHP.
 **Da declaração**, a partir do `.opus/manifest.json` que o `opus gen` publica:
 
 - domínios, actions (com entrada, saída, permissão e o que emitem e invalidam), entidades e seus
-  campos, dicionários, reactions, schedules e o encadeamento entre eles;
+  campos, Produtos de Dados, dicionários, reactions e schedules;
+- linhagem declarada entre Fontes, entities, Produtos de Dados e suas Actions de interface;
 - cobertura de documentação, conformidade pela régua do Opus **do projeto observado**, inventário
   de testes e a configuração de agentes que o repositório carrega.
 
