@@ -2,7 +2,7 @@
 
 > A série 0.4 usa os contratos de Presentation e Produtos de Dados do `@softize/opus` 16.
 
-> **Status:** v0.1 — leitura estática e telemetria local. Uma versão, sem semver por módulo.
+> **Status:** v0.4 — leitura estática, Produtos de Dados e telemetria local. Uma versão, sem semver por módulo.
 
 A lente de desenvolvimento de um projeto Opus. Responde duas perguntas que costumam ficar sem
 resposta enquanto se programa: **o que esta requisição fez** e **o que este projeto declara**.
