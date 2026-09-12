@@ -1,6 +1,6 @@
 # Opus Lens
 
-> A série 0.5 usa os contratos de Presentation e Produtos de Dados do `@softize/opus` 16.1.
+> A partir da versão 0.5.1, a Lens usa os contratos de Presentation e Produtos de Dados do `@softize/opus` 17.
 
 > **Status:** v0.5 — leitura estática, Presentations, Produtos de Dados e telemetria local. Uma versão, sem semver por módulo.
 
