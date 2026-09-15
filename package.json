@@ -1,6 +1,6 @@
 {
   "name": "@softize/opus-lens",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "description": "Lente de desenvolvimento para projetos Opus: o que uma requisição fez e o que o projeto declara.",
   "license": "MIT",
@@ -29,7 +29,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@softize/opus": "17.0.0"
+    "@softize/opus": "18.0.1"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
