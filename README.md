@@ -1,8 +1,10 @@
-# Opus Lens
+# Lens
 
-> A partir da versão 0.5.2, a Lens usa os contratos de Presentation e Produtos de Dados do `@softize/opus` 18.
+> **Status:** v0.6 — leitura estática, Presentations, Produtos de Dados, telemetria local e painel
+> no pacote. Uma versão, sem semver por módulo. Compatível com `@softize/opus` 18.
 
-> **Status:** v0.5 — leitura estática, Presentations, Produtos de Dados e telemetria local. Uma versão, sem semver por módulo.
+> **Veio do `@softize/opus-lens`?** O pacote mudou de nome na 0.6.0 e passou a trazer o painel.
+> Veja [Migração a partir do `@softize/opus-lens`](#migração-a-partir-do-softizeopus-lens).
 
 A lente de desenvolvimento de um projeto Opus. Responde duas perguntas que costumam ficar sem
 resposta enquanto se programa: **o que esta requisição fez** e **o que este projeto declara**.
@@ -28,19 +30,25 @@ ecossistema PHP.
 - cobertura de documentação, conformidade pela régua do Opus **do projeto observado**, inventário
   de testes e a configuração de agentes que o repositório carrega.
 
-## Fronteira
+## Como as peças se encaixam
 
-A lente **apresenta**; ela não é dona do vocabulário. Quem sabe o que é uma action é o Opus, e é
-dele que vêm o manifest, a régua do `opus check` e a introspecção. A dependência aponta sempre para
-fora: `@softize/opus-lens` → `@softize/opus`, nunca o contrário.
+A lente tem três entradas, e cada uma roda num lugar:
 
-Por isso ela também não mora dentro do Opus: o painel é ferramenta de desenvolvimento e não deve
-viajar no pacote que os aplicativos carregam em produção.
+| Entrada | Onde roda | Papel |
+| --- | --- | --- |
+| `@softize/lens` | serviço Node do projeto | coleta a execução, lê a declaração e responde as rotas de dados |
+| `@softize/lens/ui` | navegador, compilado pelo Vite do projeto | o painel |
+| `@softize/lens/vite` | dev server do projeto | serve o painel em `/lens` e encaminha as rotas de dados |
+
+O painel é uma página separada da aplicação, servida só pelo dev server. Ele usa o CSS do projeto,
+então herda o tema e a versão do Opus UI que o projeto já carrega.
 
 ## Montagem
 
+### 1. No serviço: coleta e rotas de dados
+
 ```ts
-import { createLens } from '@softize/opus-lens'
+import { createLens } from '@softize/lens'
 
 const lens = createLens()
 
@@ -58,16 +66,101 @@ Consultas entram na montagem da conexão:
 new Kysely({ dialect, plugins, log: lens.kyselyLog() })
 ```
 
-Desligada, `instrument` devolve os mesmos adapters e o `log` não grava: manter a montagem no código
-não muda o comportamento do serviço. A ativação é explícita (`LENS_ENABLED=true`) e nunca vale em
-produção.
+As rotas do painel são um handler Fetch padrão: recebe um `Request` e devolve um `Response`, ou
+`null` quando o pedido não é da lente. O host só adapta a entrada ao servidor que usa. Com Fastify:
 
-Para inspecionar um diretório qualquer — um worktree, por exemplo — sem depender do processo em
-execução:
+```ts
+if (lens.enabled) {
+  app.route({
+    method: ['GET', 'POST'],
+    url: '/__lens/api/*',
+    handler: async (request, reply) => {
+      const response = await lens.handle(new Request(new URL(request.url, 'http://lens.local'), { method: request.method }))
+      if (response === null) return reply.callNotFound()
+      return reply.code(response.status).type('application/json').send(await response.text())
+    },
+  })
+}
+```
+
+Desligada, `instrument` devolve os mesmos adapters, o `log` não grava e `handle` devolve `null` para
+tudo: manter a montagem no código não muda o comportamento do serviço. A ativação é explícita
+(`LENS_ENABLED=true`) e nunca vale com `NODE_ENV=production`.
+
+### 2. No app: o painel
+
+```ts
+// vite.config.ts
+import { lens } from '@softize/lens/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss(), lens({ target: 'http://127.0.0.1:7012' })],
+})
+```
+
+`target` é o endereço do serviço que monta o handler; o plugin encaminha `/__lens/api` para ele. Sem
+`target`, o projeto configura o próprio proxy.
+
+O Tailwind do projeto precisa enxergar as classes do painel, como já enxerga as do Opus UI. No CSS
+de entrada:
+
+```css
+@source '../node_modules/@softize/lens/src/ui/**/*.{ts,tsx}';
+```
+
+O painel abre em `/lens`. Cada tela tem endereço próprio (`/lens/actions`, `/lens/r/<requestId>`),
+para poder ser colada numa conversa ou num commit.
+
+### Opções
+
+| Onde | Opção | Padrão | Para quê |
+| --- | --- | --- | --- |
+| `lens()` e `createLens()` | `apiBase` | `/__lens/api` | prefixo das rotas de dados |
+| `lens()` | `basePath` | `/lens` | prefixo da página |
+| `lens()` | `css` | `/src/index.css` | CSS de onde o painel herda tema e Tailwind |
+| `createLens()` | `checkDir` | raiz do processo | pacote onde a régua do Opus roda |
+| `createLens()` | `onError` | — | aviso quando uma leitura falha (a resposta segue como 503) |
+
+Quem hospeda o painel fora de um dev server Vite — a cabine do Maestro, por exemplo — monta direto:
+
+```ts
+import { mountLens } from '@softize/lens/ui'
+
+mountLens(document.getElementById('root')!, { basePath: '/maestro/lens', apiBase: '/maestro/__lens/api' })
+```
+
+### Inspeção sem processo em execução
+
+Para inspecionar um diretório qualquer — um worktree, por exemplo:
 
 ```ts
 const { structure, docs, ai, project, tests } = await inspect({ root, dirs })
 ```
+
+## Migração a partir do `@softize/opus-lens`
+
+A API do servidor não mudou. A migração troca o nome e remove o painel que o projeto mantinha:
+
+1. Trocar a dependência `@softize/opus-lens` por `@softize/lens` e os imports correspondentes.
+2. Apagar o painel local e a entrada HTML dele, e registrar o plugin `lens()` no `vite.config.ts`.
+3. Substituir as rotas escritas à mão por `lens.handle`. Se a régua rodava num diretório diferente da
+   raiz do processo, informar `checkDir`.
+4. Acrescentar o `@source` do painel ao CSS de entrada.
+
+`@softize/opus` passou a ser peer dependency: a lente usa a instalação do projeto em vez de trazer a
+própria cópia.
+
+## Fronteira
+
+A lente **apresenta**; ela não é dona do vocabulário. Quem sabe o que é uma action é o Opus, e é
+dele que vêm o manifest, a régua do `opus check` e a introspecção. A dependência aponta sempre para
+fora: `@softize/lens` → `@softize/opus`, nunca o contrário.
+
+Por isso ela também não mora dentro do Opus: o painel é ferramenta de desenvolvimento e não deve
+viajar no pacote que os aplicativos carregam em produção.
+
+Dentro do pacote há uma segunda fronteira, entre servidor e navegador: o painel conhece só os tipos
+do servidor, e o servidor não importa o painel. As duas regras são verificadas por teste.
 
 ## Registro
 

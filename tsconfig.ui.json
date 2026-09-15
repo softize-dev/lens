@@ -1,0 +1,20 @@
+{
+  // O painel compila junto com o fonte `.tsx` do `@softize/opus/ui`, então usa a mesma
+  // configuração de um app que o consome — sem `exactOptionalPropertyTypes`, que o Opus UI
+  // não adota.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["src/ui"]
+}

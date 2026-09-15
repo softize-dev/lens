@@ -1,36 +1,94 @@
 /**
- * A direção da dependência é a fronteira que a ADR 0054 pede verificável: a lente
- * consome os donos do vocabulário e nunca o contrário. Um import de domínio, de serviço
- * ou do app aqui dentro transformaria a lente em parte da aplicação que ela observa.
+ * A direção da dependência é a fronteira verificável da lente: ela consome os donos do
+ * vocabulário e nunca o contrário. Um import de domínio, de serviço ou do app aqui dentro
+ * transformaria a lente em parte da aplicação que ela observa.
+ *
+ * Com o painel no pacote, há uma segunda fronteira: servidor e navegador. O painel só
+ * conhece os TIPOS do servidor, e o servidor não alcança o painel.
  */
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const IMPORT_RE = /from\s+'([^']+)'/g
+const IMPORT_RE = /import\s+(type\s+)?[^'"]*?from\s+'([^']+)'|^import\s+'([^']+)'/gm
 
-/** O que a lente pode consumir: o runtime que ela observa, o driver que vê as consultas,
+/** O que o servidor pode consumir: o runtime que observa, o driver que vê as consultas,
  *  a biblioteca padrão do Node e os próprios arquivos. */
-const ALLOWED = [/^node:/, /^@softize\/opus(\/|$)/, /^kysely$/, /^\.\.?\//, /^vitest$/]
+const SERVER_ALLOWED = [/^node:/, /^@softize\/opus(\/|$)/, /^kysely$/, /^\.\.?\//, /^vitest$/]
 
-describe('direção da dependência (ADR 0054)', () => {
-  const dir = fileURLToPath(new URL('.', import.meta.url))
-  const files = readdirSync(dir).filter((name) => name.endsWith('.ts'))
+/** O que o painel pode consumir: React, o design system do Opus e os próprios arquivos. */
+const UI_ALLOWED = [
+  /^react$/,
+  /^react-dom\/client$/,
+  /^@tanstack\/react-query$/,
+  /^lucide-react$/,
+  /^@softize\/opus\/ui\/react$/,
+  /^\.\.?\//,
+  /^vitest$/,
+]
 
-  it('encontra os módulos da lente para verificar', () => {
-    expect(files.length).toBeGreaterThan(3)
+interface Import {
+  file: string
+  specifier: string
+  typeOnly: boolean
+}
+
+const src = fileURLToPath(new URL('.', import.meta.url))
+const ui = join(src, 'ui')
+
+function walk(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name)
+    if (statSync(path).isDirectory()) return walk(path)
+    return /\.tsx?$/.test(name) ? [path] : []
+  })
+}
+
+function importsOf(file: string): Import[] {
+  const source = readFileSync(file, 'utf8')
+  return [...source.matchAll(IMPORT_RE)].map((match) => ({
+    file: relative(src, file),
+    specifier: (match[2] ?? match[3])!,
+    typeOnly: match[1] !== undefined,
+  }))
+}
+
+const files = walk(src)
+const uiFiles = files.filter((file) => file.startsWith(`${ui}/`))
+const serverFiles = files.filter((file) => !file.startsWith(`${ui}/`))
+
+describe('direção da dependência', () => {
+  it('encontra os módulos do servidor e do painel para verificar', () => {
+    expect(serverFiles.length).toBeGreaterThan(3)
+    expect(uiFiles.length).toBeGreaterThan(3)
   })
 
-  it('não importa domínio, serviço nem app', () => {
-    const forbidden: string[] = []
-    for (const name of files) {
-      const source = readFileSync(`${dir}${name}`, 'utf8')
-      for (const [, specifier] of source.matchAll(IMPORT_RE)) {
-        if (specifier !== undefined && !ALLOWED.some((pattern) => pattern.test(specifier))) {
-          forbidden.push(`${name}: ${specifier}`)
-        }
-      }
-    }
+  it('o servidor não importa domínio, serviço, app nem o painel', () => {
+    const forbidden = serverFiles
+      .flatMap(importsOf)
+      .filter(({ file, specifier, typeOnly }) => {
+        if (file === 'vite.ts' && specifier === 'vite') return !typeOnly
+        // O plugin escreve o módulo de entrada do navegador como texto, pelo nome público.
+        if (file === 'vite.ts' && specifier.startsWith('@softize/lens/')) return false
+        if (specifier.startsWith('./ui/')) return true
+        return !SERVER_ALLOWED.some((pattern) => pattern.test(specifier))
+      })
+      .map(({ file, specifier }) => `${file}: ${specifier}`)
+
+    expect(forbidden).toEqual([])
+  })
+
+  it('o painel usa só React e o Opus UI, e do servidor recebe apenas tipos', () => {
+    const forbidden = uiFiles
+      .flatMap(importsOf)
+      .filter(({ file, specifier, typeOnly }) => {
+        if (!UI_ALLOWED.some((pattern) => pattern.test(specifier))) return true
+        const target = join(src, file, '..', specifier)
+        return specifier.startsWith('.') && !target.startsWith(`${ui}/`) && !typeOnly
+      })
+      .map(({ file, specifier }) => `${file}: ${specifier}`)
+
     expect(forbidden).toEqual([])
   })
 })

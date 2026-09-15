@@ -1,0 +1,83 @@
+import { describe, expect, it } from 'vitest'
+import { lens } from './vite.ts'
+
+type Middleware = (req: { url?: string; originalUrl?: string }, res: FakeResponse, next: () => void) => void
+
+interface FakeResponse {
+  statusCode: number
+  headers: Record<string, string>
+  body: string | undefined
+  setHeader(name: string, value: string): void
+  end(body: string): void
+}
+
+function response(): FakeResponse {
+  return {
+    statusCode: 0,
+    headers: {},
+    body: undefined,
+    setHeader(name, value) {
+      this.headers[name] = value
+    },
+    end(body) {
+      this.body = body
+    },
+  }
+}
+
+/** Monta o plugin num servidor falso e devolve o middleware que ele registra. */
+function middlewareOf(plugin: ReturnType<typeof lens>): Middleware {
+  let registered: Middleware | undefined
+  const server = {
+    middlewares: { use: (fn: Middleware) => (registered = fn) },
+    transformIndexHtml: (_url: string, html: string) => Promise.resolve(html),
+  }
+  ;(plugin.configureServer as (server: unknown) => void)(server)
+  return registered!
+}
+
+async function visit(middleware: Middleware, url: string): Promise<{ res: FakeResponse; passed: boolean }> {
+  const res = response()
+  let passed = false
+  middleware({ url }, res, () => (passed = true))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  return { res, passed }
+}
+
+describe('plugin Vite da lente', () => {
+  it('existe só no dev server, então o build de produção não recebe o painel', () => {
+    expect(lens().apply).toBe('serve')
+  })
+
+  it('serve a página no prefixo e deixa o resto do app seguir', async () => {
+    const middleware = middlewareOf(lens())
+
+    const page = await visit(middleware, '/lens/r/req-1?x=1')
+    expect(page.passed).toBe(false)
+    expect(page.res.statusCode).toBe(200)
+    expect(page.res.body).toContain('/@id/__x00__virtual:lens-entry')
+
+    expect((await visit(middleware, '/')).passed).toBe(true)
+    expect((await visit(middleware, '/lensx')).passed).toBe(true)
+  })
+
+  it('o módulo de entrada importa o CSS do app e monta com os prefixos configurados', () => {
+    const plugin = lens({ basePath: '/maestro/lens/', apiBase: '/maestro/__lens/api', css: '/src/app.css' })
+    const resolved = (plugin.resolveId as (id: string) => string | undefined)('virtual:lens-entry')
+    const source = (plugin.load as (id: string) => string | undefined)(resolved!)
+
+    expect(source).toContain('import "/src/app.css"')
+    expect(source).toContain("from '@softize/lens/ui'")
+    expect(source).toContain('"basePath":"/maestro/lens"')
+    expect(source).toContain('"apiBase":"/maestro/__lens/api"')
+  })
+
+  it('encaminha as rotas de dados só quando recebe o endereço do servidor', () => {
+    const config = (plugin: ReturnType<typeof lens>) => (plugin.config as () => unknown)()
+
+    expect(config(lens())).toBeUndefined()
+    expect(config(lens({ target: 'http://127.0.0.1:7012' }))).toEqual({
+      server: { proxy: { '/__lens/api': 'http://127.0.0.1:7012' } },
+    })
+  })
+})

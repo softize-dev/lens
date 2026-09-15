@@ -5,7 +5,8 @@
  * ativação explícita nada é decorado e nada é gravado: a lente devolve os mesmos adapters
  * que recebeu, então deixá-la montada não muda o comportamento do serviço.
  *
- * Ver ADR 0054 para a fronteira entre esta lente, o Maestro e o Opus.
+ * O painel (`@softize/lens/ui`) e o plugin Vite (`@softize/lens/vite`) são entradas
+ * separadas: nada daqui chega ao navegador, e nada de lá roda no servidor.
  */
 import { existsSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
@@ -22,10 +23,11 @@ import { lensAi, lensAudit, lensCache, lensEvents, lensObservability, lensQueue 
 import { fileStore, type LensStore } from './store.ts'
 import { lensKyselyLog, type KyselyLogOptions } from './kysely.ts'
 import { aiInventory, type AiInventory } from './ai.ts'
-import { projectStatus, type ProjectStatus } from './project.ts'
+import { conformity, projectStatus, type Conformity, type ProjectStatus } from './project.ts'
 import { inspectStructure, readStructure, type Structure } from './structure.ts'
 import { testInventory, type TestInventory } from './tests.ts'
 import { createSuiteRunner, type SuiteRunner } from './run.ts'
+import { createLensHandler, type LensHandler, type LensHandlerOptions } from './http.ts'
 
 export type { LensStore } from './store.ts'
 export type { KyselyLogOptions } from './kysely.ts'
@@ -39,6 +41,8 @@ export { conformity, projectStatus } from './project.ts'
 export { aiInventory } from './ai.ts'
 export { testInventory } from './tests.ts'
 export { createSuiteRunner } from './run.ts'
+export { createLensHandler, DEFAULT_API_BASE } from './http.ts'
+export type { LensHandler, LensHandlerOptions } from './http.ts'
 export type * from './structure.ts'
 export type * from './project.ts'
 export type * from './ai.ts'
@@ -55,7 +59,7 @@ export interface InstrumentableAdapters {
   ai?: AiAdapter | undefined
 }
 
-export interface LensOptions {
+export interface LensOptions extends LensHandlerOptions {
   /** Diretório do buffer. Padrão: `.lens` na raiz do processo. */
   dir?: string
   /** Quantos registros o buffer mantém. */
@@ -69,6 +73,11 @@ export interface LensOptions {
   target?: string
   /** Raiz do repositório, onde vivem `.claude/` e `base.json`. Padrão: descoberta. */
   repoRoot?: string
+  /**
+   * Diretório onde a régua do Opus roda — o pacote com o código e o Opus instalado.
+   * Padrão: a raiz do processo.
+   */
+  checkDir?: string
   /**
    * Ativação. Sem valor explícito, a lente lê `LENS_ENABLED` e permanece desligada em
    * produção mesmo que a variável esteja presente — a inspeção é ferramenta de
@@ -91,6 +100,13 @@ export interface Lens {
   tests(): TestInventory
   /** Execução da suíte do alvo — assíncrona, uma por vez. */
   suite: SuiteRunner
+  /** Régua do Opus do projeto aplicada ao código. Leva segundos: só sob demanda. */
+  conformity(): Promise<Conformity>
+  /**
+   * Rotas de dados do painel como handler Fetch. Devolve `null` para pedidos fora do
+   * prefixo e para todos quando a lente está desligada — o host repassa adiante.
+   */
+  handle(request: Request): Promise<Response | null>
   /** Devolve os adapters decorados, ou os mesmos que recebeu quando desligada. */
   instrument<T extends InstrumentableAdapters>(adapters: T): T
   /** `log` para o construtor do Kysely; sem efeito quando a lente está desligada. */
@@ -125,14 +141,21 @@ export function createLens(options: LensOptions = {}): Lens {
   const manifest = options.manifest ?? join(process.cwd(), '.opus', 'manifest.json')
   const target = options.target ?? process.cwd()
   const repoRoot = options.repoRoot ?? discoverRepoRoot(target)
+  const checkDir = options.checkDir ?? process.cwd()
+  let handle: LensHandler | undefined
 
-  return {
+  const lens: Lens = {
     enabled,
     store,
     structure: () => inspectStructure({ manifest, dir: target }),
     ai: () => aiInventory(repoRoot, [relative(repoRoot, target) === '' ? 'CLAUDE.md' : `${relative(repoRoot, target)}/CLAUDE.md`]),
     project: () => projectStatus(repoRoot, target),
     suite: createSuiteRunner(target),
+    conformity: () => conformity(checkDir),
+    handle: (request) => {
+      handle ??= createLensHandler(lens, options)
+      return handle(request)
+    },
     tests: () => {
       // O inventário é síncrono e a menção só precisa dos nomes: o manifest basta, e sem
       // ele a lista de menções vem vazia em vez de a tela inteira esperar a introspecção.
@@ -161,4 +184,5 @@ export function createLens(options: LensOptions = {}): Lens {
       return enabled ? log : (logOptions?.next ?? (() => {}))
     },
   }
+  return lens
 }
