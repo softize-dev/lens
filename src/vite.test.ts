@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { lens } from './vite.ts'
+import { lens } from './vite.js'
 
 type Middleware = (req: { url?: string; originalUrl?: string }, res: FakeResponse, next: () => void) => void
 
@@ -45,6 +46,14 @@ async function visit(middleware: Middleware, url: string): Promise<{ res: FakeRe
 }
 
 describe('plugin Vite da lente', () => {
+  it('a entrada publicada é JavaScript, que o Node carrega de node_modules sem remover tipos', () => {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+      exports: Record<string, { default: string }>
+    }
+
+    expect(pkg.exports['./vite']!.default).toMatch(/\.js$/)
+  })
+
   it('existe só no dev server, então o build de produção não recebe o painel', () => {
     expect(lens().apply).toBe('serve')
   })

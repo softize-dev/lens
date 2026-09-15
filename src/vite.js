@@ -9,32 +9,26 @@
  * Só existe no dev server (`apply: 'serve'`): o build de produção não recebe página,
  * módulo nem proxy da lente, sem depender de disciplina de import no projeto.
  *
+ * A entrada é JavaScript, com os tipos em `vite.d.ts`: o `vite.config.ts` do projeto é
+ * carregado pelo Node, que não remove tipos de arquivos dentro de `node_modules`.
+ *
  * Uso (vite.config.ts do app):
  *   import { lens } from '@softize/lens/vite'
  *   export default defineConfig({ plugins: [react(), tailwindcss(), lens({ target: 'http://127.0.0.1:7012' })] })
  */
-import type { Plugin } from 'vite'
 
-export interface LensPluginOptions {
-  /** Prefixo da página. Padrão: `/lens`. */
-  basePath?: string
-  /** Prefixo das rotas de dados, o mesmo do handler do servidor. Padrão: `/__lens/api`. */
-  apiBase?: string
-  /** CSS de entrada do app, de onde o painel herda tema e Tailwind. Padrão: `/src/index.css`. */
-  css?: string
-  /**
-   * Endereço do servidor que monta o handler. Com valor, o plugin encaminha `apiBase`
-   * para ele; sem valor, o projeto configura o próprio proxy (ou serve na mesma origem).
-   */
-  target?: string
-}
+/** @typedef {import('./vite.d.ts').LensPluginOptions} LensPluginOptions */
 
 const VIRTUAL_ID = 'virtual:lens-entry'
 // O `/@id/` é como o Vite serve módulos por id; o `\0` da convenção de virtual vira `__x00__`.
 const RESOLVED_ID = '\0' + VIRTUAL_ID
 const ENTRY_URL = '/@id/__x00__' + VIRTUAL_ID
 
-export function lens(options: LensPluginOptions = {}): Plugin {
+/**
+ * @param {LensPluginOptions} [options]
+ * @returns {import('vite').Plugin}
+ */
+export function lens(options = {}) {
   const basePath = trimSlash(options.basePath ?? '/lens')
   const apiBase = trimSlash(options.apiBase ?? '/__lens/api')
   const css = options.css ?? '/src/index.css'
@@ -78,7 +72,8 @@ export function lens(options: LensPluginOptions = {}): Plugin {
   }
 }
 
-function page(): string {
+/** @returns {string} */
+function page() {
   return [
     '<!doctype html>',
     '<html lang="pt-BR">',
@@ -100,6 +95,7 @@ function page(): string {
   ].join('\n')
 }
 
-function trimSlash(path: string): string {
+/** @param {string} path */
+function trimSlash(path) {
   return path.length > 1 ? path.replace(/\/+$/, '') : path
 }

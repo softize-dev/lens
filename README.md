@@ -40,6 +40,10 @@ A lente tem três entradas, e cada uma roda num lugar:
 | `@softize/lens/ui` | navegador, compilado pelo Vite do projeto | o painel |
 | `@softize/lens/vite` | dev server do projeto | serve o painel em `/lens` e encaminha as rotas de dados |
 
+A entrada do plugin é JavaScript com tipos declarados, porque o `vite.config.ts` é carregado pelo
+Node, que não remove tipos de arquivos dentro de `node_modules`. Painel e servidor são fonte
+TypeScript, compilados pelo Vite e pelo carregador do serviço (`tsx`, por exemplo).
+
 O painel é uma página separada da aplicação, servida só pelo dev server. Ele usa o CSS do projeto,
 então herda o tema e a versão do Opus UI que o projeto já carrega.
 

@@ -41,7 +41,7 @@ function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name)
     if (statSync(path).isDirectory()) return walk(path)
-    return /\.tsx?$/.test(name) ? [path] : []
+    return /\.(tsx?|js)$/.test(name) ? [path] : []
   })
 }
 
@@ -68,9 +68,9 @@ describe('direção da dependência', () => {
     const forbidden = serverFiles
       .flatMap(importsOf)
       .filter(({ file, specifier, typeOnly }) => {
-        if (file === 'vite.ts' && specifier === 'vite') return !typeOnly
+        if (file.startsWith('vite.') && specifier === 'vite') return !typeOnly
         // O plugin escreve o módulo de entrada do navegador como texto, pelo nome público.
-        if (file === 'vite.ts' && specifier.startsWith('@softize/lens/')) return false
+        if (file === 'vite.js' && specifier.startsWith('@softize/lens/')) return false
         if (specifier.startsWith('./ui/')) return true
         return !SERVER_ALLOWED.some((pattern) => pattern.test(specifier))
       })

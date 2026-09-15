@@ -2,7 +2,7 @@
   "name": "@softize/lens",
   "version": "0.6.0",
   "type": "module",
-  "description": "Lente de desenvolvimento para projetos Opus: o que uma requisição fez e o que o projeto declara.",
+  "description": "Lente de desenvolvimento para projetos Opus: o que uma requisi\u00e7\u00e3o fez e o que o projeto declara.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -27,7 +27,10 @@
     ".": "./src/index.ts",
     "./kysely": "./src/kysely.ts",
     "./ui": "./src/ui/index.ts",
-    "./vite": "./src/vite.ts"
+    "./vite": {
+      "types": "./src/vite.d.ts",
+      "default": "./src/vite.js"
+    }
   },
   "scripts": {
     "test": "vitest run",
