@@ -9,8 +9,8 @@
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "types": ["node"],
-    // Os arquivos `.js` do pacote (o plugin e o utilitário de prefixo) são conferidos
-    // contra os `.d.ts` que os acompanham: são eles que o consumidor enxerga.
+    // O plugin e o utilitário de prefixo são `.js` porque o Node os carrega direto. Sem
+    // isto eles ficariam fora de qualquer verificação de tipo; o JSDoc deles passa a valer.
     "allowJs": true,
     "checkJs": true
   },

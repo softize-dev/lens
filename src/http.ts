@@ -30,12 +30,15 @@ type LensReads = Pick<Lens, 'enabled' | 'store' | 'structure' | 'ai' | 'project'
 
 export function createLensHandler(lens: LensReads, options: LensHandlerOptions = {}): LensHandler {
   const apiBase = trimSlash(options.apiBase ?? DEFAULT_API_BASE)
+  // Na raiz não há prefixo para separar o que é da lente: o caminho inteiro é a rota, e o
+  // que ela não reconhece volta para o host em vez de virar 404 dela.
+  const atRoot = apiBase === '/'
 
   return async (request) => {
     if (!lens.enabled) return null
     const path = new URL(request.url).pathname
-    if (path !== apiBase && !path.startsWith(`${apiBase}/`)) return null
-    const route = path.slice(apiBase.length)
+    if (!atRoot && path !== apiBase && !path.startsWith(`${apiBase}/`)) return null
+    const route = atRoot ? path : path.slice(apiBase.length)
     const method = request.method.toUpperCase()
 
     if (method === 'GET' && route === '/records') return json(listRecords(lens.store))
@@ -74,7 +77,7 @@ export function createLensHandler(lens: LensReads, options: LensHandlerOptions =
       }
     }
 
-    return notFound('not_found')
+    return atRoot ? null : notFound('not_found')
   }
 }
 

@@ -49,8 +49,9 @@ function walk(dir: string): string[] {
 }
 
 /** Um caminho de módulo não tem metacaractere: é assim que a varredura ignora uma expressão
- *  regular escrita dentro de um teste, que de resto se parece com um import. */
-const MODULE_ID = /^[\w@./~-]+$/
+ *  regular escrita dentro de um teste, que de resto se parece com um import. Os dois-pontos
+ *  entram porque `node:fs` num arquivo do painel é exatamente o que este gate procura. */
+const MODULE_ID = /^[\w@./~:-]+$/
 
 function importsOf(file: string): Import[] {
   const source = readFileSync(file, 'utf8')

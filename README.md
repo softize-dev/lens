@@ -88,9 +88,12 @@ if (lens.enabled) {
 ```
 
 Desligada, `instrument` devolve os mesmos adapters, o `log` não grava e `handle` devolve `null` para
-tudo: manter a montagem no código não muda o comportamento do serviço. A ativação é explícita — com
-`LENS_ENABLED=true`, e nunca por `NODE_ENV=production` presente. Um projeto que precise ligá-la fora
-disso passa `createLens({ enabled })` e assume a decisão.
+tudo: manter a montagem no código não muda o comportamento do serviço.
+
+A ativação tem três degraus, nesta ordem: `createLens({ enabled })` explícito decide sozinho;
+sem ele, `NODE_ENV=production` mantém a lente desligada mesmo com `LENS_ENABLED=true`; fora de
+produção, vale o `LENS_ENABLED`. Um projeto que precise ligá-la em produção passa `enabled` e
+assume a decisão.
 
 ### 2. No app: o painel
 
@@ -125,7 +128,7 @@ para poder ser colada numa conversa ou num commit.
 
 | Onde | Opção | Padrão | Para quê |
 | --- | --- | --- | --- |
-| `lens()` e `createLens()` | `apiBase` | `/__lens/api` | prefixo das rotas de dados |
+| `lens()` e `createLens()` | `apiBase` | `/__lens/api` | prefixo das rotas de dados (na raiz, `/`, o que a lente não reconhece volta ao host) |
 | `lens()` | `basePath` | `/lens` | prefixo da página |
 | `lens()` | `css` | `/src/index.css` | CSS de onde o painel herda tema e Tailwind |
 | `createLens()` | `checkDir` | raiz do processo | pacote onde a régua do Opus roda |

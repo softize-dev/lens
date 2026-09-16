@@ -104,6 +104,14 @@ describe('handler das rotas do painel', () => {
     expect(onError).toHaveBeenCalledWith('/conformity', expect.any(Error))
   })
 
+  it('na raiz, atende as rotas da lente e devolve o resto ao host', async () => {
+    const handler = createLensHandler(lens(), { apiBase: '/' })
+
+    expect((await call(handler, '/records'))?.status).toBe(200)
+    // Sem a guarda da raiz o prefixo viraria '' e o 404 da lente cobriria o site inteiro.
+    expect(await call(handler, '/qualquer/coisa')).toBeNull()
+  })
+
   it('aceita outro prefixo, com ou sem barra final', async () => {
     const handler = createLensHandler(lens(), { apiBase: '/maestro/__lens/api/' })
 
