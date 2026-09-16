@@ -22,4 +22,10 @@ próprio código.
 - `lens.handle(request)` e `createLensHandler`: as rotas de dados como handler Fetch padrão.
 - `lens.conformity()` e a opção `checkDir`, para a régua rodar no pacote certo.
 
+### Limitações conhecidas
+
+- O painel exige `base: '/'` no Vite do projeto.
+- Os peers do painel (`react`, `react-dom`, `@tanstack/react-query`, `lucide-react`, `vite`) são
+  opcionais: sem eles a instalação passa e a falta aparece ao abrir `/lens`.
+
 A migração está no [README](README.md#migração-a-partir-do-softizeopus-lens).

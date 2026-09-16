@@ -70,6 +70,27 @@ describe('plugin Vite da lente', () => {
     expect((await visit(middleware, '/lensx')).passed).toBe(true)
   })
 
+  it('o módulo de entrada chama um símbolo que o subpath publicado realmente exporta', () => {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+      name: string
+      exports: Record<string, string | { default: string }>
+    }
+    const plugin = lens()
+    const resolved = (plugin.resolveId as (id: string) => string | undefined)('virtual:lens-entry')
+    const entry = (plugin.load as (id: string) => string | undefined)(resolved!)!
+    const [, symbol, specifier] = /import \{ (\w+) \} from '([^']+)'/.exec(entry)!
+
+    // O módulo virtual é texto: sem isto, renomear o export ou mexer no `exports` do
+    // package deixa o painel branco com typecheck e testes verdes.
+    expect(specifier).toBe(`${pkg.name}/ui`)
+    const published = typeof pkg.exports['./ui'] === 'string' ? pkg.exports['./ui'] : pkg.exports['./ui']!.default
+    // O caminho é relativo à raiz do pacote, que é onde o `exports` é interpretado. Aqui
+    // basta ler: montar o painel é trabalho do teste que roda no navegador.
+    const entryModule = readFileSync(new URL(published, new URL('../', import.meta.url)), 'utf8')
+    expect(entryModule).toMatch(new RegExp(`export \\{[^}]*\\b${symbol}\\b`))
+    expect(entry).toContain(`${symbol}(document.getElementById('root')`)
+  })
+
   it('o módulo de entrada importa o CSS do app e monta com os prefixos configurados', () => {
     const plugin = lens({ basePath: '/maestro/lens/', apiBase: '/maestro/__lens/api', css: '/src/app.css' })
     const resolved = (plugin.resolveId as (id: string) => string | undefined)('virtual:lens-entry')

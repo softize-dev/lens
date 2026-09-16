@@ -13,6 +13,7 @@
 import type { Lens } from './index.ts'
 import { docCoverage } from './structure.ts'
 import { findRecord, listRecords } from './api.ts'
+import { trimSlash } from './base-path.js'
 
 export const DEFAULT_API_BASE = '/__lens/api'
 
@@ -28,7 +29,7 @@ export type LensHandler = (request: Request) => Promise<Response | null>
 type LensReads = Pick<Lens, 'enabled' | 'store' | 'structure' | 'ai' | 'project' | 'tests' | 'suite' | 'conformity'>
 
 export function createLensHandler(lens: LensReads, options: LensHandlerOptions = {}): LensHandler {
-  const apiBase = (options.apiBase ?? DEFAULT_API_BASE).replace(/\/+$/, '')
+  const apiBase = trimSlash(options.apiBase ?? DEFAULT_API_BASE)
 
   return async (request) => {
     if (!lens.enabled) return null

@@ -88,10 +88,16 @@ if (lens.enabled) {
 ```
 
 Desligada, `instrument` devolve os mesmos adapters, o `log` não grava e `handle` devolve `null` para
-tudo: manter a montagem no código não muda o comportamento do serviço. A ativação é explícita
-(`LENS_ENABLED=true`) e nunca vale com `NODE_ENV=production`.
+tudo: manter a montagem no código não muda o comportamento do serviço. A ativação é explícita — com
+`LENS_ENABLED=true`, e nunca por `NODE_ENV=production` presente. Um projeto que precise ligá-la fora
+disso passa `createLens({ enabled })` e assume a decisão.
 
 ### 2. No app: o painel
+
+O painel usa a instalação do projeto, então ele precisa ter `react`, `react-dom`,
+`@tanstack/react-query`, `lucide-react` e `vite`. Os cinco são peers opcionais, porque quem só
+coleta telemetria no servidor não precisa de nenhum deles: a instalação passa em silêncio e a falta
+apareceria ao abrir `/lens`.
 
 ```ts
 // vite.config.ts
@@ -150,6 +156,9 @@ A API do servidor não mudou. A migração troca o nome e remove o painel que o 
 3. Substituir as rotas escritas à mão por `lens.handle`. Se a régua rodava num diretório diferente da
    raiz do processo, informar `checkDir`.
 4. Acrescentar o `@source` do painel ao CSS de entrada.
+5. Conferir que o projeto tem os peers do painel, listados acima.
+
+O painel assume `base: '/'` no Vite. Sob outra base, a página não é servida no prefixo esperado.
 
 `@softize/opus` passou a ser peer dependency: a lente usa a instalação do projeto em vez de trazer a
 própria cópia.

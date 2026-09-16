@@ -17,7 +17,10 @@ const IMPORT_RE = /import\s+(type\s+)?[^'"]*?from\s+'([^']+)'|^import\s+'([^']+)
  *  a biblioteca padrão do Node e os próprios arquivos. */
 const SERVER_ALLOWED = [/^node:/, /^@softize\/opus(\/|$)/, /^kysely$/, /^\.\.?\//, /^vitest$/]
 
-/** O que o painel pode consumir: React, o design system do Opus e os próprios arquivos. */
+/** O que o painel pode consumir: React, o design system do Opus e os próprios arquivos.
+ *  De fora de `ui/`, só tipos — e `base-path.js`, função pura que os três lados usam. */
+const UI_SHARED = ['base-path.js']
+
 const UI_ALLOWED = [
   /^react$/,
   /^react-dom\/client$/,
@@ -45,13 +48,19 @@ function walk(dir: string): string[] {
   })
 }
 
+/** Um caminho de módulo não tem metacaractere: é assim que a varredura ignora uma expressão
+ *  regular escrita dentro de um teste, que de resto se parece com um import. */
+const MODULE_ID = /^[\w@./~-]+$/
+
 function importsOf(file: string): Import[] {
   const source = readFileSync(file, 'utf8')
-  return [...source.matchAll(IMPORT_RE)].map((match) => ({
-    file: relative(src, file),
-    specifier: (match[2] ?? match[3])!,
-    typeOnly: match[1] !== undefined,
-  }))
+  return [...source.matchAll(IMPORT_RE)]
+    .map((match) => ({
+      file: relative(src, file),
+      specifier: (match[2] ?? match[3])!,
+      typeOnly: match[1] !== undefined,
+    }))
+    .filter(({ specifier }) => MODULE_ID.test(specifier))
 }
 
 const files = walk(src)
@@ -85,6 +94,7 @@ describe('direção da dependência', () => {
       .filter(({ file, specifier, typeOnly }) => {
         if (!UI_ALLOWED.some((pattern) => pattern.test(specifier))) return true
         const target = join(src, file, '..', specifier)
+        if (UI_SHARED.includes(relative(src, target))) return false
         return specifier.startsWith('.') && !target.startsWith(`${ui}/`) && !typeOnly
       })
       .map(({ file, specifier }) => `${file}: ${specifier}`)

@@ -2,7 +2,7 @@
  * Lentes do projeto — qual régua vale aqui, o que ela aponta e o que existe de teste.
  */
 import { Alert, Badge, Button, Card, DataState, EmptyValue, MetricCard } from '@softize/opus/ui/react'
-import { MetricGrid } from './metric-grid.tsx'
+import { MetricGrid } from '../metric-grid.tsx'
 import { useConformity, useProject, useSuiteRun, useTests } from '../data.ts'
 import { DeclarationTable } from './table.tsx'
 

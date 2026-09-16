@@ -17,7 +17,9 @@
  *   export default defineConfig({ plugins: [react(), tailwindcss(), lens({ target: 'http://127.0.0.1:7012' })] })
  */
 
-/** @typedef {import('./vite.d.ts').LensPluginOptions} LensPluginOptions */
+/** @typedef {import('./vite.js').LensPluginOptions} LensPluginOptions */
+
+import { trimSlash } from './base-path.js'
 
 const VIRTUAL_ID = 'virtual:lens-entry'
 // O `/@id/` é como o Vite serve módulos por id; o `\0` da convenção de virtual vira `__x00__`.
@@ -80,6 +82,7 @@ function page() {
     '  <head>',
     '    <meta charset="UTF-8" />',
     '    <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+    '    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />',
     '    <title>Lens</title>',
     '    <script>',
     // O tema acompanha o sistema antes do bundle, para a página não piscar clara no escuro.
@@ -93,9 +96,4 @@ function page() {
     '  </body>',
     '</html>',
   ].join('\n')
-}
-
-/** @param {string} path */
-function trimSlash(path) {
-  return path.length > 1 ? path.replace(/\/+$/, '') : path
 }

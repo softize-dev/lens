@@ -1,0 +1,3 @@
+allowBuilds:
+  '@softize/opus': false
+  esbuild: true

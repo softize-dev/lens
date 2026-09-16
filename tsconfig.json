@@ -8,8 +8,12 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node"],
+    // Os arquivos `.js` do pacote (o plugin e o utilitário de prefixo) são conferidos
+    // contra os `.d.ts` que os acompanham: são eles que o consumidor enxerga.
+    "allowJs": true,
+    "checkJs": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["src/ui"]
 }

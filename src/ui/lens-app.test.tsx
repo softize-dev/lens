@@ -261,6 +261,15 @@ describe('LensApp', () => {
   })
 })
 
+describe('subpath publicado', () => {
+  it('entrega uma função de montagem pronta para uso', async () => {
+    const ui = await import('./index.ts')
+
+    expect(typeof ui.mountLens).toBe('function')
+    expect(typeof ui.LensRoot).toBe('function')
+  })
+})
+
 describe('routeFromPath', () => {
   it('lê a view e o registro relativos ao prefixo', () => {
     expect(routeFromPath('/lens', '/lens')).toEqual({ view: 'requests', record: null })

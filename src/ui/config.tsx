@@ -6,6 +6,7 @@
  * cabine do Maestro, por exemplo — passa os dois valores na montagem.
  */
 import { createContext, useContext, type ReactNode } from 'react'
+import { trimSlash } from '../base-path.js'
 
 export const DEFAULT_BASE_PATH = '/lens'
 export const DEFAULT_API_BASE = '/__lens/api'
@@ -33,9 +34,4 @@ export function LensAddressProvider({
 
 export function useLensAddress(): LensAddress {
   return useContext(LensAddressContext)
-}
-
-/** `/lens/` e `/lens` são o mesmo prefixo; a barra final duplicaria o separador das rotas. */
-export function trimSlash(path: string): string {
-  return path.length > 1 ? path.replace(/\/+$/, '') : path
 }

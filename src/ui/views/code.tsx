@@ -6,7 +6,7 @@
  */
 import type { Structure } from '../../index.ts'
 import { Badge, Card, EmptyValue, MetricCard, PresentationInspector } from '@softize/opus/ui/react'
-import { MetricGrid } from './metric-grid.tsx'
+import { MetricGrid } from '../metric-grid.tsx'
 import { useDocs, useStructure } from '../data.ts'
 import { ManifestMissing } from './missing.tsx'
 import { DeclarationTable, type Column } from './table.tsx'
