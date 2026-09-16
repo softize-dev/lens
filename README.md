@@ -129,10 +129,13 @@ para poder ser colada numa conversa ou num commit.
 | Onde | Opção | Padrão | Para quê |
 | --- | --- | --- | --- |
 | `lens()` e `createLens()` | `apiBase` | `/__lens/api` | prefixo das rotas de dados (na raiz, `/`, o que a lente não reconhece volta ao host) |
-| `lens()` | `basePath` | `/lens` | prefixo da página |
+| `lens()` | `basePath` | `/lens` | prefixo da página, relativo ao `base` do projeto |
 | `lens()` | `css` | `/src/index.css` | CSS de onde o painel herda tema e Tailwind |
 | `createLens()` | `checkDir` | raiz do processo | pacote onde a régua do Opus roda |
 | `createLens()` | `onError` | — | aviso quando uma leitura falha (a resposta segue como 503) |
+
+O `basePath` é relativo ao `base` do Vite: com `base: '/app/'`, o painel abre em `/app/lens`. As
+rotas de dados não recebem esse prefixo, porque pertencem ao servidor observado e não ao dev server.
 
 Quem hospeda o painel fora de um dev server Vite — a cabine do Maestro, por exemplo — monta direto:
 
@@ -160,8 +163,6 @@ A API do servidor não mudou. A migração troca o nome e remove o painel que o 
    raiz do processo, informar `checkDir`.
 4. Acrescentar o `@source` do painel ao CSS de entrada.
 5. Conferir que o projeto tem os peers do painel, listados acima.
-
-O painel assume `base: '/'` no Vite. Sob outra base, a página não é servida no prefixo esperado.
 
 `@softize/opus` passou a ser peer dependency: a lente usa a instalação do projeto em vez de trazer a
 própria cópia.

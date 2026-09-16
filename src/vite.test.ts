@@ -27,7 +27,8 @@ function response(): FakeResponse {
 }
 
 /** Monta o plugin num servidor falso e devolve o middleware que ele registra. */
-function middlewareOf(plugin: ReturnType<typeof lens>): Middleware {
+function middlewareOf(plugin: ReturnType<typeof lens>, base = '/'): Middleware {
+  ;(plugin.configResolved as (config: unknown) => void)({ base })
   let registered: Middleware | undefined
   const server = {
     middlewares: { use: (fn: Middleware) => (registered = fn) },
@@ -100,6 +101,17 @@ describe('plugin Vite da lente', () => {
     expect(source).toContain("from '@softize/lens/ui'")
     expect(source).toContain('"basePath":"/maestro/lens"')
     expect(source).toContain('"apiBase":"/maestro/__lens/api"')
+  })
+
+  it('o endereço do painel acompanha o `base`, e as rotas de dados não', () => {
+    const plugin = lens()
+    ;(plugin.configResolved as (config: unknown) => void)({ base: '/app/' })
+    const resolved = (plugin.resolveId as (id: string) => string | undefined)('virtual:lens-entry')
+    const entry = (plugin.load as (id: string) => string | undefined)(resolved!)!
+
+    // O painel lê `location.pathname`, que inclui o base; as rotas são do servidor observado.
+    expect(entry).toContain('"basePath":"/app/lens"')
+    expect(entry).toContain('"apiBase":"/__lens/api"')
   })
 
   it('encaminha as rotas de dados só quando recebe o endereço do servidor', () => {

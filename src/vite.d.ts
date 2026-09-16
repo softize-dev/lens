@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 
 export interface LensPluginOptions {
-  /** Prefixo da página. Padrão: `/lens`. */
+  /** Prefixo da página, relativo ao `base` do projeto. Padrão: `/lens`. */
   basePath?: string
   /** Prefixo das rotas de dados, o mesmo do handler do servidor. Padrão: `/__lens/api`. */
   apiBase?: string

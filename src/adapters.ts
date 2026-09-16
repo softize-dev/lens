@@ -1,5 +1,5 @@
 /**
- * Decoradores das portas do runtime (ADR 0054).
+ * Decoradores das portas do runtime.
  *
  * A lente não instrumenta o Opus: ela envolve os adapters que o app já registra. Cada
  * decorador acrescenta o registro e delega para o adapter original, que continua fazendo

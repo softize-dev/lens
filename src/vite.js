@@ -34,10 +34,18 @@ export function lens(options = {}) {
   const basePath = trimSlash(options.basePath ?? '/lens')
   const apiBase = trimSlash(options.apiBase ?? '/__lens/api')
   const css = options.css ?? '/src/index.css'
+  // O `base` do projeto (`/app/`, por exemplo) prefixa a página e os módulos que o dev
+  // server entrega. As rotas de dados ficam de fora: elas são do servidor observado, não
+  // deste dev server, e continuam absolutas na origem.
+  let viteBase = ''
 
   return {
     name: 'softize-lens',
     apply: 'serve',
+    configResolved(config) {
+      const base = trimSlash(config.base ?? '/')
+      viteBase = base === '/' ? '' : base
+    },
     config() {
       if (options.target === undefined) return undefined
       return { server: { proxy: { [apiBase]: options.target } } }
@@ -47,16 +55,21 @@ export function lens(options = {}) {
     },
     load(id) {
       if (id !== RESOLVED_ID) return undefined
+      // O endereço que o painel lê do navegador inclui o `base`; o das rotas de dados, não.
+      const address = { basePath: viteBase + basePath, apiBase }
       return [
         `import ${JSON.stringify(css)}`,
         `import { mountLens } from '@softize/lens/ui'`,
-        `mountLens(document.getElementById('root'), ${JSON.stringify({ basePath, apiBase })})`,
+        `mountLens(document.getElementById('root'), ${JSON.stringify(address)})`,
       ].join('\n')
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = (req.url ?? '').split('?')[0] ?? ''
-        if (path !== basePath && !path.startsWith(`${basePath}/`)) {
+        // Este middleware roda antes do que o Vite usa para remover o `base` da URL, então
+        // a comparação é com o endereço completo, como o navegador o pediu.
+        const served = viteBase + basePath
+        if (path !== served && !path.startsWith(`${served}/`)) {
           next()
           return
         }
@@ -74,7 +87,12 @@ export function lens(options = {}) {
   }
 }
 
-/** @returns {string} */
+/**
+ * As URLs saem raiz-absolutas e sem o `base`: o `transformIndexHtml` do Vite prefixa toda
+ * URL do HTML de desenvolvimento, e prefixar aqui somaria duas vezes.
+ *
+ * @returns {string}
+ */
 function page() {
   return [
     '<!doctype html>',

@@ -1,6 +1,6 @@
 /**
  * Tipos do registro da lente — o que uma requisição fez, do ponto de vista das portas
- * do runtime (ADR 0054).
+ * do runtime.
  *
  * O registro é o agrupamento primário: uma execução de topo e tudo que ela causou.
  * Cada entrada guarda a duração e o desfecho porque a pergunta do loop de

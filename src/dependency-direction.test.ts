@@ -78,7 +78,11 @@ describe('direção da dependência', () => {
     const forbidden = serverFiles
       .flatMap(importsOf)
       .filter(({ file, specifier, typeOnly }) => {
-        if (file.startsWith('vite.') && specifier === 'vite') return !typeOnly
+        // O `vite` é dependência de desenvolvimento: o plugin só o consome como tipo, e um
+        // teste pode subir um dev server de verdade para exercitá-lo.
+        if (specifier === 'vite') {
+          return !(file.startsWith('vite.') && typeOnly) && !file.endsWith('.test.ts')
+        }
         // O plugin escreve o módulo de entrada do navegador como texto, pelo nome público.
         if (file === 'vite.js' && specifier.startsWith('@softize/lens/')) return false
         if (specifier.startsWith('./ui/')) return true

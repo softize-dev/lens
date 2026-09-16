@@ -1,11 +1,11 @@
 /**
- * Lente de estrutura — o que o projeto declara (ADR 0054).
+ * Lente de estrutura — o que o projeto declara.
  *
  * A fonte é `.opus/manifest.json`, a projeção que o `opus gen` produz a partir das
  * declarações. É de propósito: quem sabe o que é uma action, uma entidade ou um
  * dicionário é o Opus, e o manifest é o formato em que ele publica esse entendimento —
  * com a documentação de negócio junto. A lente lê e apresenta; não reimplementa o
- * reconhecimento das declarações, que é o erro que a ADR mandou não repetir.
+ * reconhecimento das declarações, que é a duplicação que motivou este pacote.
  *
  * Sem manifest, a leitura devolve `null` em vez de adivinhar: um projeto que não gerou a
  * projeção precisa rodar `opus gen`, e dizer isso é mais útil que uma lista incompleta.
@@ -530,8 +530,8 @@ function domainFromFile(file: string | undefined): string {
  * Estrutura do projeto: o manifest quando existe, senão a introspecção do próprio Opus.
  *
  * O fallback é do Opus de propósito. Reimplementar aqui o reconhecimento de `defineAction`
- * seria recriar a duplicação que a ADR 0054 mandou desfazer — a lente apresenta, não é
- * dona do vocabulário. Como o `introspect` ainda não cobre entidades e dicionários, essa
+ * seria recriar a duplicação que motivou este pacote — a lente apresenta, não é dona do
+ * vocabulário. Como o `introspect` ainda não cobre entidades e dicionários, essa
  * leitura vem menor, e é o `source` que conta isso à tela.
  */
 export async function inspectStructure(options: { manifest: string; dir: string }): Promise<Structure | null> {

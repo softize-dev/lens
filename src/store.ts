@@ -1,7 +1,7 @@
 /**
  * Armazenamento do registro — buffer circular por contagem, em arquivos JSON.
  *
- * A ADR 0054 descartou gravar no banco da aplicação. O Telescope mantém as entradas numa
+ * Gravar no banco da aplicação foi descartado. O Telescope mantém as entradas numa
  * tabela e o modo de falha conhecido é ela crescer até o expurgo agendado não terminar
  * mais. Como retenção longa não é objetivo aqui, o descarte acontece na própria escrita:
  * passou do limite de registros, o mais antigo sai. Não há rotina agendada nem comando de

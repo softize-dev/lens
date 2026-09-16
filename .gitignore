@@ -1,3 +1,6 @@
 node_modules/
 .lens/
 *.tsbuildinfo
+
+# Sondagens descartáveis: script temporário para inspecionar o dev server não entra no repo.
+*.tmp.mjs

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.1
+
+- O plugin Vite funciona sob qualquer `base` do projeto: `basePath` passa a ser relativo ao `base`,
+  e o painel lê o endereço do navegador já com o prefixo. Com `base: '/app/'`, o painel abre em
+  `/app/lens`.
+- **Se você contornava isso na 0.6.0**, passando o `base` dentro do `basePath` (`basePath:
+  '/app/lens'` com `base: '/app/'`), retire o prefixo: agora ele seria somado duas vezes, e a URL
+  de sempre passaria a servir o app hospedeiro em vez do painel, sem erro nenhum.
+- Um teste passa a subir um dev server Vite de verdade. Foi o que mostrou que prefixar as URLs do
+  HTML no plugin somava ao prefixo que o próprio Vite aplica, e deixava o painel em branco.
+- A ativação (explícito vence produção, que vence `LENS_ENABLED`) passa a ter teste.
+- O código publicado não cita mais uma ADR que vive no repositório de um consumidor.
+
 ## 0.6.0
 
 O pacote passa a se chamar `@softize/lens` e traz o painel, que antes cada projeto mantinha no
@@ -24,7 +37,7 @@ próprio código.
 
 ### Limitações conhecidas
 
-- O painel exige `base: '/'` no Vite do projeto.
+- O painel exige `base: '/'` no Vite do projeto. (Resolvido na 0.6.1.)
 - Os peers do painel (`react`, `react-dom`, `@tanstack/react-query`, `lucide-react`, `vite`) são
   opcionais: sem eles a instalação passa e a falta aparece ao abrir `/lens`.
 
