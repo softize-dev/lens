@@ -144,11 +144,26 @@ describe('lente de estrutura', () => {
       expect.objectContaining({
         id: 'leads',
         title: 'Leads',
+        body: 'lead.list',
         bodyAction: 'lead.list',
         actions: ['lead.create'],
         definition: MANIFEST.presentations[0],
       }),
     ])
+  })
+
+  it('mostra o componente quando é ele que ocupa o corpo, não uma action', () => {
+    const manifest = structuredClone(MANIFEST) as unknown as {
+      presentations: { body: Record<string, unknown> }[]
+    }
+    // Uma Presentation declara action OU componente no corpo; a maioria das telas de
+    // configuração declara componente, e sem isto a lente mostrava só um traço.
+    manifest.presentations[0]!.body = { component: 'SettingsUsersPage' }
+    writeFileSync(path, JSON.stringify(manifest))
+
+    const structure = readStructure(path)!
+
+    expect(structure.presentations[0]).toMatchObject({ body: 'SettingsUsersPage', bodyAction: '—' })
   })
 
   it('lê o alias legado contexts sem reintroduzi-lo na saída da lente', () => {

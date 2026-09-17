@@ -149,7 +149,7 @@ export function PresentationsView(): React.ReactElement {
       loading={loading}
       error={error}
       search={(presentation) =>
-        `${presentation.id} ${presentation.title} ${presentation.bodyAction} ${presentation.actions.join(' ')}`
+        `${presentation.id} ${presentation.title} ${presentation.body} ${presentation.actions.join(' ')}`
       }
       emptyMessage="Nenhuma Presentation registrada no manifest."
       columns={[
@@ -160,8 +160,8 @@ export function PresentationsView(): React.ReactElement {
         },
         { header: 'Título', cell: (presentation) => presentation.title },
         {
-          header: 'Body',
-          cell: (presentation) => <span className={mono}>{presentation.bodyAction}</span>,
+          header: 'Corpo',
+          cell: (presentation) => <span className={mono}>{presentation.body}</span>,
           className: 'w-56',
         },
         {

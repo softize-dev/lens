@@ -2,6 +2,11 @@
 
 ## 0.6.1
 
+- A coluna de corpo das Presentations volta a dizer o que ocupa o recurso. Uma Presentation declara
+  uma action **ou** um componente no corpo, e a lente lia só a action: telas que declaram componente
+  — a maioria das de configuração — apareciam como um traço. O campo novo `body` da projeção traz
+  um ou outro, e `bodyAction` segue sendo a action quando existe.
+
 - O plugin Vite funciona sob qualquer `base` do projeto: `basePath` passa a ser relativo ao `base`,
   e o painel lê o endereço do navegador já com o prefixo. Com `base: '/app/'`, o painel abre em
   `/app/lens`.

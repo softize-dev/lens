@@ -151,6 +151,13 @@ export interface StructureDomain {
 export interface StructurePresentation {
   id: string
   title: string
+  /**
+   * O que ocupa o corpo do recurso: a action que ele lista, ou o componente que o
+   * desenha. Uma Presentation declara um ou outro, então quem apresenta lê este campo
+   * em vez de escolher entre dois.
+   */
+  body: string
+  /** A action do corpo, quando é dela que o recurso parte. */
   bodyAction: string
   actions: string[]
   /** Artefato integral projetado pelo Opus; a Lens não reconstrói o blueprint. */
@@ -285,6 +292,7 @@ export function readStructure(path: string): Structure | null {
     structure.presentations.push({
       id: str(definition['id']) ?? '—',
       title: str(definition['title']) ?? '—',
+      body: str(body['action']) ?? str(body['component']) ?? '—',
       bodyAction: str(body['action']) ?? '—',
       actions: commands.flatMap((command) => {
         const name = str(command['action'])
