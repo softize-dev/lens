@@ -140,7 +140,7 @@ function Detail({ recordKey }: { recordKey: string | null }): React.ReactElement
                 {duration(record.durationMs)}
               </span>
             </div>
-            <dl className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <dl className="mb-6 grid grid-cols-4 gap-4">
               <Fact term="Requisição">{record.requestId ?? <EmptyValue compact />}</Fact>
               <Fact term="Rastreamento">{record.traceId?.slice(0, 16) ?? <EmptyValue compact />}</Fact>
               <Fact term="Procedência">{record.provenance?.kind ?? <EmptyValue compact />}</Fact>

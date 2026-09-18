@@ -1,7 +1,14 @@
 # Changelog
 
-## 0.6.1
+## 0.7.0
 
+Versão menor, e não correção: a faixa `^0.6.0` segura esta atualização de propósito. Quem
+contornava o `base` passando o prefixo dentro do `basePath` precisa retirá-lo, e tanto a coluna de
+corpo das Presentations quanto a cadência das grades mudam o que a tela mostra.
+
+- O painel deixa de usar breakpoints de viewport: desde o Opus 18.1 a interface assume largura
+  mínima de desktop, e a lente passa a seguir a mesma régua do projeto que observa. As três grades
+  com prefixo responsivo passam a ter cadência fixa.
 - A coluna de corpo das Presentations volta a dizer o que ocupa o recurso. Uma Presentation declara
   uma action **ou** um componente no corpo, e a lente lia só a action: telas que declaram componente
   — a maioria das de configuração — apareciam como um traço. O campo novo `body` da projeção traz
