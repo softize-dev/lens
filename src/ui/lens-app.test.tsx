@@ -33,6 +33,7 @@ const STRUCTURE = {
     {
       id: 'sales.leads',
       title: 'Leads',
+      body: 'lead.list',
       bodyAction: 'lead.list',
       actions: ['lead.create'],
       definition: {
@@ -220,7 +221,8 @@ describe('LensApp', () => {
       ['Opus', 'origin/main'],
       ['Testes', 'Executar suíte'],
       ['Permissões', 'sales'],
-      ['Presentations', 'sales.leads'],
+      // A coluna de corpo lê `body`, que é o que a projeção emite — a action OU o componente.
+      ['Presentations', 'lead.list'],
       // O encadeamento é o desenho que a cabine tem hoje: sai de lá, tem que existir aqui.
       ['Encadeamento', 'lead.notify'],
     ] as const) {

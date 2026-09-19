@@ -49,7 +49,7 @@ próprio código.
 
 ### Limitações conhecidas
 
-- O painel exige `base: '/'` no Vite do projeto. (Resolvido na 0.6.1.)
+- O painel exige `base: '/'` no Vite do projeto. (Resolvido na 0.7.0.)
 - Os peers do painel (`react`, `react-dom`, `@tanstack/react-query`, `lucide-react`, `vite`) são
   opcionais: sem eles a instalação passa e a falta aparece ao abrir `/lens`.
 

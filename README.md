@@ -1,6 +1,6 @@
 # Lens
 
-> **Status:** v0.6 — leitura estática, Presentations, Produtos de Dados, telemetria local e painel
+> **Status:** v0.7 — leitura estática, Presentations, Produtos de Dados, telemetria local e painel
 > no pacote. Uma versão, sem semver por módulo. Compatível com `@softize/opus` 18.
 
 > **Veio do `@softize/opus-lens`?** O pacote mudou de nome na 0.6.0 e passou a trazer o painel.
