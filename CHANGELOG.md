@@ -9,10 +9,10 @@
   título (`titleRequired={false}`), que é como a lente o usa, e o divisor inferior já existia
   antes — só passou a ser derivado do layout em vez de fixo.
 
-**Verificação visual pendente:** o `PaneHeader` da 19.0.0 traz altura fixa de `3.75rem` e
-`flex items-center`, que o anterior não tinha. A marca da lente empilha duas linhas de texto num
-espaço que antes crescia com o conteúdo. Abra `/lens` e confira se o par título/subtítulo continua
-respirando; se apertar, o ajuste é no `className` do próprio `PaneHeader`, em `src/ui/lens-app.tsx`.
+**Verificado:** o `PaneHeader` da 19.0.0 traz altura fixa de `3.75rem` e `flex items-center`, que o
+anterior não tinha, e a marca da lente empilha duas linhas num espaço que antes crescia com o
+conteúdo. A captura do painel em 25/09 mostra o par título/subtítulo inteiro, com respiro acima e
+abaixo e o divisor alinhado — a altura fixa não apertou nada.
 
 ## 0.7.0 — 2026-09-19
 
