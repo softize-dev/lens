@@ -2,7 +2,7 @@
   "name": "@softize/lens",
   "version": "0.7.0",
   "type": "module",
-  "description": "Lente de desenvolvimento para projetos Opus: o que uma requisi\u00e7\u00e3o fez e o que o projeto declara.",
+  "description": "Lente de desenvolvimento para projetos Opus: o que uma requisição fez e o que o projeto declara.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -34,10 +34,11 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ui.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ui.json",
+    "release": "bash ./scripts/release.sh"
   },
   "peerDependencies": {
-    "@softize/opus": "^18.0.1",
+    "@softize/opus": "^18.0.1 || ^19.0.0",
     "@tanstack/react-query": "^5.0.0",
     "kysely": ">=0.27.0 <0.30.0",
     "lucide-react": ">=0.460.0",
@@ -82,5 +83,6 @@
     "vite": "^6.0.0",
     "vitest": "^2.1.0",
     "zod": "^3.24.0"
-  }
+  },
+  "packageManager": "pnpm@11.4.0"
 }

@@ -1,6 +1,20 @@
 # Changelog
 
-## 0.7.0
+## 0.7.1 — 2026-09-25
+
+- A faixa de `@softize/opus` nos `peerDependencies` passa a aceitar a 19: era `^18.0.1`, e a
+  plataforma que consome a lente adotou o Opus 19.0.0 em 24/09. A declaração estava simplesmente
+  falsa, e o `pnpm install` avisava em cada execução.
+- Nada mudou no código do painel. O `PaneHeader` da 19.0.0 aceita conteúdo livre e não exige
+  título (`titleRequired={false}`), que é como a lente o usa, e o divisor inferior já existia
+  antes — só passou a ser derivado do layout em vez de fixo.
+
+**Verificação visual pendente:** o `PaneHeader` da 19.0.0 traz altura fixa de `3.75rem` e
+`flex items-center`, que o anterior não tinha. A marca da lente empilha duas linhas de texto num
+espaço que antes crescia com o conteúdo. Abra `/lens` e confira se o par título/subtítulo continua
+respirando; se apertar, o ajuste é no `className` do próprio `PaneHeader`, em `src/ui/lens-app.tsx`.
+
+## 0.7.0 — 2026-09-19
 
 Versão menor, e não correção: a faixa `^0.6.0` segura esta atualização de propósito. Quem
 contornava o `base` passando o prefixo dentro do `basePath` precisa retirá-lo, e tanto a coluna de
@@ -25,7 +39,7 @@ corpo das Presentations quanto a cadência das grades mudam o que a tela mostra.
 - A ativação (explícito vence produção, que vence `LENS_ENABLED`) passa a ter teste.
 - O código publicado não cita mais uma ADR que vive no repositório de um consumidor.
 
-## 0.6.0
+## 0.6.0 — 2026-09-16
 
 O pacote passa a se chamar `@softize/lens` e traz o painel, que antes cada projeto mantinha no
 próprio código.
