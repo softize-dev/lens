@@ -39,9 +39,10 @@ resolve a lente contra um Opus que ela nunca viu. O muro de manifesto do script 
 **O push foi recusado.** Nada foi publicado. Reconcilie a `main` — o commit do bump já está local —
 e rode de novo.
 
-**O publish falhou depois do push.** A `main` declara uma versão que o registry não tem. Resolva a
-causa e rode `pnpm release none`, que publica sem bumpar outra vez; ou desfaça o anúncio com
-`git revert HEAD` e empurre.
+**O publish falhou.** A `main` declara uma versão que o registry não tem — vale para a release com
+bump e para a rota `none`, porque nas duas o commit que declara a versão já está em `origin/main`
+quando o publish roda. Resolva a causa e rode `pnpm release none`, que publica sem bumpar outra vez;
+ou desfaça o anúncio revertendo o commit que declarou a versão (o script diz como achá-lo).
 
 **Um gate falhou, ou você interrompeu com Ctrl-C.** O script restaura o `package.json` sozinho em
 qualquer saída anterior ao commit — no dry-run e na release real. Ele reescreve apenas o campo
