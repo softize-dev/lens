@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.1 — 2026-09-25
+## 0.7.1 — 2026-09-26
 
 - A faixa de `@softize/opus` nos `peerDependencies` passa a aceitar a 19: era `^18.0.1`, e a
   plataforma que consome a lente adotou o Opus 19.0.0 em 24/09. A declaração estava simplesmente
