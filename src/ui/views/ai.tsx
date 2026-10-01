@@ -88,18 +88,21 @@ export function InstructionsView(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      <MetricCard
-        loading={isLoading}
-        label="Custo do contexto inicial"
-        value={
-          data === null || data === undefined ? (
-            <EmptyValue compact label="Ainda não lido" />
-          ) : (
-            `${data.contextTokens} tokens`
-          )
-        }
-        description="Estimativa do que cada sessão de agente carrega antes de começar, considerando quatro caracteres por token. Use este valor para identificar instruções que podem ser reduzidas; ele não bloqueia a execução."
-      />
+      {isLoading ? (
+        <MetricCard loading />
+      ) : (
+        <MetricCard
+          label="Custo do contexto inicial"
+          value={
+            data === null || data === undefined ? (
+              <EmptyValue compact label="Ainda não lido" />
+            ) : (
+              `${data.contextTokens} tokens`
+            )
+          }
+          description="Estimativa do que cada sessão de agente carrega antes de começar, considerando quatro caracteres por token. Use este valor para identificar instruções que podem ser reduzidas; ele não bloqueia a execução."
+        />
+      )}
       <DataState
         loading={isLoading}
         error={error}

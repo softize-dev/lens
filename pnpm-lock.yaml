@@ -12,8 +12,8 @@ importers:
         specifier: ^3.0.0
         version: 3.10.0(react-hook-form@7.88.0(react@19.3.0))
       '@softize/opus':
-        specifier: 18.0.1
-        version: 18.0.1(@hookform/resolvers@3.10.0(react-hook-form@7.88.0(react@19.3.0)))(@tanstack/react-query@5.102.8(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(kysely@0.27.6)(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react@19.3.0)(vite@6.4.3(@types/node@26.5.1))(zod@3.25.76)
+        specifier: 24.0.0
+        version: 24.0.0(@hookform/resolvers@3.10.0(react-hook-form@7.88.0(react@19.3.0)))(@tanstack/react-query@5.102.8(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(kysely@0.27.6)(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react@19.3.0)(vite@6.4.3(@types/node@26.5.1))(zod@3.25.76)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.102.8(react@19.3.0)
@@ -1240,12 +1240,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@softize/base@2.3.0':
-    resolution: {integrity: sha512-+HND6gHVX/zB+ipfbEM7g6o4cSsRLvw+Lq74V4IJ4kJ7aJehlU9ZE7iJWrj1raai+zxICK9GZk3YO8HShVWohA==}
+  '@softize/base@2.5.0':
+    resolution: {integrity: sha512-8EGTchJImcC2/I+oDGJNyxNZI9d/0zSxj23YisnMZMNtMIVZoBiIkB9YSTmrqJX6IYv+EG0lP3mtVLKgWaBhdw==}
     hasBin: true
 
-  '@softize/opus@18.0.1':
-    resolution: {integrity: sha512-BjLnIASY/MZbFVPRqKDsVzSgCDrZtrODbjSSSf22VXzGf0b1H3bH7/oFNLxaGCyjeHNdkMCAp2TE6P5PDi3+Kg==}
+  '@softize/opus@24.0.0':
+    resolution: {integrity: sha512-F3rtJrfJQA3zTzNoygRMtdSmwDUxs8QnbYZbN4xvN7e4snnSGYjqUTsYojJdKXwWlofwHncBqZMt0JcFA8+g0g==}
     hasBin: true
     peerDependencies:
       '@anthropic-ai/sdk': '>=0.35.0'
@@ -3280,11 +3280,11 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.63.3':
     optional: true
 
-  '@softize/base@2.3.0':
+  '@softize/base@2.5.0':
     dependencies:
       markdown-it: 14.3.2
 
-  '@softize/opus@18.0.1(@hookform/resolvers@3.10.0(react-hook-form@7.88.0(react@19.3.0)))(@tanstack/react-query@5.102.8(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(kysely@0.27.6)(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react@19.3.0)(vite@6.4.3(@types/node@26.5.1))(zod@3.25.76)':
+  '@softize/opus@24.0.0(@hookform/resolvers@3.10.0(react-hook-form@7.88.0(react@19.3.0)))(@tanstack/react-query@5.102.8(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(kysely@0.27.6)(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react@19.3.0)(vite@6.4.3(@types/node@26.5.1))(zod@3.25.76)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
       '@radix-ui/react-checkbox': 1.3.11(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3296,7 +3296,7 @@ snapshots:
       '@radix-ui/react-slot': 1.3.3(@types/react@19.3.0)(react@19.3.0)
       '@radix-ui/react-tabs': 1.1.21(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-tooltip': 1.2.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@softize/base': 2.3.0
+      '@softize/base': 2.5.0
       '@tailwindcss/typography': 0.5.20
       '@types/markdown-it': 14.2.0
       class-variance-authority: 0.7.1

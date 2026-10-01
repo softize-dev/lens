@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 — 2026-10-01
+
+- O painel adota o `Surface` do Opus 24 no lugar do `Card`, removido nessa versão.
+- O menu lateral passa a compor cabeçalho e corpo rolável com elementos estruturais próprios; `Pane`
+  fica restrito ao papel de casca redimensionável e não fornece mais `PaneHeader` nem `PaneBody`.
+- O peer de `@softize/opus` passa a exigir a linha 24. A mudança é incompatível de propósito: versões
+  anteriores do design system ainda expõem a composição removida e devem continuar na Lens 0.7.
+
 ## 0.7.1 — 2026-09-26
 
 - A faixa de `@softize/opus` nos `peerDependencies` passa a aceitar a 19: era `^18.0.1`, e a

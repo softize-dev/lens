@@ -1,7 +1,7 @@
 /**
  * Lentes do projeto — qual régua vale aqui, o que ela aponta e o que existe de teste.
  */
-import { Alert, Badge, Button, Card, DataState, EmptyValue, MetricCard } from '@softize/opus/ui/react'
+import { Alert, Badge, Button, DataState, EmptyValue, MetricCard, Surface } from '@softize/opus/ui/react'
 import { MetricGrid } from '../metric-grid.tsx'
 import { useConformity, useProject, useSuiteRun, useTests } from '../data.ts'
 import { DeclarationTable } from './table.tsx'
@@ -155,7 +155,7 @@ function SuiteRun(): React.ReactElement {
   const running = state?.status === 'running' || starting
 
   return (
-    <Card className="gap-3 p-5">
+    <Surface framed elevation="raised" className="flex flex-col gap-3 p-5">
       <div className="flex items-center gap-3">
         <div className="min-w-0">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">Suíte</span>
@@ -188,7 +188,7 @@ function SuiteRun(): React.ReactElement {
           )}
         </>
       )}
-    </Card>
+    </Surface>
   )
 }
 
@@ -210,13 +210,13 @@ export function TestsView(): React.ReactElement {
         <MetricCard label="Entidades mencionadas" value={`${entities.mentioned}/${entities.total}`} />
       </MetricGrid>
       <SuiteRun />
-      <Card className="p-4">
+      <Surface framed elevation="raised" className="p-4">
         <p className="text-sm text-muted-foreground">
           Uma declaração é considerada mencionada quando seu nome aparece em um arquivo de teste. Este é
           apenas um indício de cobertura ausente, não uma prova de que o comportamento foi testado. Nada é
           executado aqui.
         </p>
-      </Card>
+      </Surface>
       <DeclarationTable
         rows={actions.missing.map((name) => ({ name }))}
         loading={isLoading}

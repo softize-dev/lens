@@ -33,7 +33,7 @@ import {
   Webhook,
   Zap,
 } from 'lucide-react'
-import { Button, PaneBody, PaneHeader, Sidebar, SidebarNav } from '@softize/opus/ui/react'
+import { Button, Sidebar, SidebarNav } from '@softize/opus/ui/react'
 import { RequestsView } from './views/requests.tsx'
 import {
   ActionsView,
@@ -275,11 +275,11 @@ export function LensApp(): React.ReactElement {
   return (
     <div className="flex h-dvh w-full">
       <Sidebar>
-        <PaneHeader className="px-4 py-3.5">
+        <header className="shrink-0 border-b border-border px-4 py-3.5">
           <span className="font-mono text-sm font-semibold tracking-tight">Lens</span>
           <p className="text-xs text-muted-foreground">Visão de desenvolvimento deste projeto</p>
-        </PaneHeader>
-        <PaneBody className="py-3">
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto py-3">
           <SidebarNav
             navLabel="Lentes"
             activeId={route.view}
@@ -292,7 +292,7 @@ export function LensApp(): React.ReactElement {
               { label: 'AI', items: AI.map(({ id, label, icon }) => ({ id, label, icon })) },
             ]}
           />
-        </PaneBody>
+        </div>
       </Sidebar>
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">

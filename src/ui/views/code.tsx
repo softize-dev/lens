@@ -5,7 +5,7 @@
  * de negócio que vive colada nela. Sem manifest não há adivinhação: a tela pede `opus gen`.
  */
 import type { Structure } from '../../index.ts'
-import { Badge, Card, EmptyValue, MetricCard, PresentationInspector } from '@softize/opus/ui/react'
+import { Badge, EmptyValue, MetricCard, PresentationInspector, Surface } from '@softize/opus/ui/react'
 import { MetricGrid } from '../metric-grid.tsx'
 import { useDocs, useStructure } from '../data.ts'
 import { ManifestMissing } from './missing.tsx'
@@ -427,11 +427,11 @@ export function DocsView(): React.ReactElement {
       </div>
       {(docs?.gaps.length ?? 0) === 0 ? (
         // Sem lacuna, uma tabela de lacunas é só um cabeçalho mudo: o estado positivo é a resposta.
-        <Card className="p-5">
+        <Surface framed elevation="raised" className="p-5">
           <p className="text-sm text-muted-foreground">
             Todas as ações, entidades e campos declarados têm descrição.
           </p>
-        </Card>
+        </Surface>
       ) : (
         <DeclarationTable
           rows={docs?.gaps ?? []}
