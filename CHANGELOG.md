@@ -13,10 +13,11 @@ ao modelo, lendo o manifest como antes (ADR 0053 do Opus).
   devolve dado pessoal.
 - A estrutura publicada por `readStructure` ganha, em cada action, `effect`, `personalData`, `ai` e
   `assistant`. Um campo que o manifest não traz fica ausente, e o painel mostra "Não declarado" ou
-  "O manifest não informa" em vez de um "não" que ninguém declarou.
+  "O manifesto não informa" em vez de um "não" que ninguém declarou.
 - A publicação para a IA e os assistentes chegam ao manifest a partir do Opus 25.2. Com um manifest
-  anterior, as colunas novas mostram que o manifest não informa, e a lente **Assistentes** pede para
-  atualizar o Opus e rodar `opus gen`.
+  anterior, as colunas novas, inclusive **Assistente**, mostram que o manifesto não informa, e a lente
+  **Assistentes** pede para atualizar o Opus e rodar `opus gen`. Um manifesto sem nenhuma action não
+  é tratado como antigo.
 - O peer de `@softize/opus` passa a aceitar a linha 25 (`^24.0.0 || ^25.0.0`). Sem isso, só um
   projeto fora da faixa declarada veria os assistentes. Typecheck e testes passaram contra o Opus
   25.1.0 instalado do npm; o repositório continua testando contra a 24.0.0, o piso da faixa.

@@ -328,15 +328,52 @@ describe('LensApp', () => {
     expect(assistants).not.toContain('customer.merge')
   })
 
-  it('explica por que não há assistentes num manifest anterior ao Opus 25.2', async () => {
-    await mount()
-    const button = [...container.querySelectorAll('button')].find((item) => item.textContent === 'Assistentes')
+  async function open(label: string): Promise<string> {
+    const button = [...container.querySelectorAll('button')].find((item) => item.textContent === label)
+    expect(button, label).toBeDefined()
     await act(async () => {
       button!.click()
     })
     await flush()
+    return container.textContent ?? ''
+  }
 
-    expect(container.textContent).toContain('não projeta assistentes')
+  it('num manifesto anterior ao Opus 25.2, diz que ele não informa em vez de "sem assistente"', async () => {
+    await mount()
+
+    const actions = await open('Ações')
+    expect(actions).toContain('O manifesto não informa')
+    expect(actions).not.toContain('Sem assistente')
+
+    await open('Assistentes')
+    expect(container.textContent).toContain('O manifesto não informa os assistentes')
+    // O comando aparece como código, não entre crases literais.
+    expect(container.textContent).not.toContain('`')
+    expect([...container.querySelectorAll('code')].map((code) => code.textContent)).toContain('opus gen')
+  })
+
+  it('num manifesto do Opus 25.2 sem assistente, diz que nenhuma ação declara', async () => {
+    structure = {
+      ...AI_STRUCTURE,
+      actions: AI_STRUCTURE.actions.map(({ assistant: _assistant, ...action }) => action),
+    }
+    await mount()
+
+    const actions = await open('Ações')
+    expect(actions).toContain('Sem assistente')
+
+    await open('Assistentes')
+    expect(container.textContent).toContain('Nenhuma ação declara assistente')
+    expect([...container.querySelectorAll('code')].map((code) => code.textContent)).toEqual(['view', 'assistant'])
+  })
+
+  it('num manifesto sem nenhuma action, não culpa a versão do Opus', async () => {
+    structure = { ...AI_STRUCTURE, actions: [] }
+    await mount()
+
+    await open('Assistentes')
+    expect(container.textContent).toContain('Nenhuma ação declara assistente')
+    expect(container.textContent).not.toContain('anterior à 25.2')
   })
 
   it('abre direto no registro quando o endereço aponta para uma requisição', async () => {

@@ -5,7 +5,17 @@
  * de negócio que vive colada nela. Sem manifest não há adivinhação: a tela pede `opus gen`.
  */
 import type { Structure, StructureAction } from '../../index.ts'
-import { Badge, EmptyValue, MetricCard, PresentationInspector, Surface } from '@softize/opus/ui/react'
+import {
+  Badge,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyValue,
+  MetricCard,
+  PresentationInspector,
+  Surface,
+} from '@softize/opus/ui/react'
 import { MetricGrid } from '../metric-grid.tsx'
 import { useDocs, useStructure } from '../data.ts'
 import { ManifestMissing } from './missing.tsx'
@@ -103,8 +113,8 @@ const declared = (value: boolean | undefined): React.ReactNode =>
   value === undefined ? <EmptyValue compact label="Não declarado" /> : value ? 'Sim' : 'Não'
 
 function aiCell(action: StructureAction): React.ReactNode {
-  // Manifest gerado antes de o Opus projetar `ai`: não dá para dizer se a action é publicada.
-  if (action.ai === undefined) return <EmptyValue compact label="O manifest não informa" />
+  // Manifesto gerado antes de o Opus projetar `ai`: não dá para dizer se a action é publicada.
+  if (action.ai === undefined) return <EmptyValue compact label="O manifesto não informa" />
   if (!action.ai.enabled) return 'Não'
   const guard = action.ai.destructive ? 'Destrutiva' : action.ai.requiresConfirmation ? 'Pede confirmação' : null
   return (
@@ -150,10 +160,13 @@ export function ActionsView(): React.ReactElement {
     {
       header: 'Assistente',
       cell: (a) =>
-        a.assistant === undefined ? (
-          <EmptyValue compact label="Sem assistente" />
-        ) : (
+        a.assistant !== undefined ? (
           <span className={mono}>{a.assistant.resource}</span>
+        ) : a.ai === undefined ? (
+          // O assistente chega junto com `ai` no manifesto (Opus 25.2); sem `ai`, a ausência não diz nada.
+          <EmptyValue compact label="O manifesto não informa" />
+        ) : (
+          <EmptyValue compact label="Sem assistente" />
         ),
       className: 'w-40',
     },
@@ -188,7 +201,36 @@ export function AssistantsView(): React.ReactElement {
     ),
   )
   if (missing) return <ManifestMissing />
-  const projectsAi = data?.actions.some((action) => action.ai !== undefined) ?? false
+  if (!loading && error === null && rows.length === 0) {
+    // Só um manifesto com actions e nenhuma `ai` é anterior ao Opus 25.2; sem actions, não há o que
+    // dizer sobre a versão.
+    const actions = data?.actions ?? []
+    const predatesAi = actions.length > 0 && actions.every((action) => action.ai === undefined)
+    return (
+      <Empty>
+        <EmptyHeader>
+          {predatesAi ? (
+            <>
+              <EmptyTitle>O manifesto não informa os assistentes</EmptyTitle>
+              <EmptyDescription>
+                Ele foi gerado por uma versão do Opus anterior à 25.2, que não projeta a publicação para a
+                IA nem os assistentes. Atualize o Opus e execute{' '}
+                <code className="font-mono text-xs">opus gen</code>.
+              </EmptyDescription>
+            </>
+          ) : (
+            <>
+              <EmptyTitle>Nenhuma ação declara assistente</EmptyTitle>
+              <EmptyDescription>
+                Uma ação <code className="font-mono text-xs">view</code> passa a ser a dona de um tipo de
+                recurso quando declara <code className="font-mono text-xs">assistant</code> no contrato.
+              </EmptyDescription>
+            </>
+          )}
+        </EmptyHeader>
+      </Empty>
+    )
+  }
   return (
     <DeclarationTable
       rows={rows}
@@ -197,11 +239,7 @@ export function AssistantsView(): React.ReactElement {
       search={({ action, assistant }) =>
         `${assistant.resource} ${assistant.label} ${assistant.skill} ${action.name} ${assistant.context.join(' ')}`
       }
-      emptyMessage={
-        projectsAi
-          ? 'Nenhuma ação declara assistente. Uma ação view vira a dona de um tipo de recurso quando declara `assistant` no contrato.'
-          : 'O manifest foi gerado por uma versão do Opus que não projeta assistentes. Atualize o Opus para a 25.2 ou mais nova e rode `opus gen`.'
-      }
+      emptyMessage="Nenhuma ação declara assistente."
       columns={[
         {
           header: 'Recurso',
@@ -243,7 +281,7 @@ export function AssistantsView(): React.ReactElement {
           header: 'Teto',
           cell: ({ assistant }) =>
             assistant.maxContextChars === undefined ? (
-              <EmptyValue compact label="O manifest não informa" />
+              <EmptyValue compact label="O manifesto não informa" />
             ) : (
               <span className="tabular-nums">{assistant.maxContextChars.toLocaleString('pt-BR')}</span>
             ),
