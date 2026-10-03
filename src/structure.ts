@@ -51,6 +51,34 @@ export interface StructureEntity {
   relationCount: number
 }
 
+/** Publicação da action para a IA, como o manifest a projeta (Opus 25.2+, ADR 0053 do Opus). */
+export interface StructureActionAi {
+  enabled: boolean
+  /** Descrição dada ao modelo, quando difere da descrição da action. */
+  description?: string
+  destructive: boolean
+  requiresConfirmation: boolean
+}
+
+/**
+ * O assistente do recurso que a action dona declara (ADR 0053 do Opus): o procedimento que a IA
+ * segue e os campos da saída que o host pode entregar ao modelo.
+ */
+export interface StructureAssistant {
+  /** O tipo de recurso de que a action é dona. */
+  resource: string
+  /** A chave da Habilidade que a IA segue ao tratar do recurso. */
+  skill: string
+  /** O nome do assistente para pessoas. */
+  label: string
+  /** O caminho do campo que nomeia o recurso. */
+  title: string
+  /** Os caminhos dos campos que vão ao modelo como dado do recurso. */
+  context: string[]
+  /** Teto do dado entregue, em caracteres de JSON. */
+  maxContextChars?: number
+}
+
 export interface StructureAction {
   domain: string
   name: string
@@ -69,6 +97,14 @@ export interface StructureAction {
   invalidates: string[]
   input: StructureParam[]
   output: StructureParam[]
+  /** `read` ou `write`; ausente quando a action não declara (ADR 0041 do Opus). */
+  effect?: 'read' | 'write'
+  /** A resposta contém dado que identifica pessoas; ausente quando a action não declara. */
+  personalData?: boolean
+  /** Ausente quando o manifest foi gerado antes de o Opus projetar a publicação para a IA. */
+  ai?: StructureActionAi
+  /** Presente só na action dona de um tipo de recurso. */
+  assistant?: StructureAssistant
 }
 
 export interface StructureReaction {
@@ -256,6 +292,40 @@ function entries(value: unknown): [string, unknown][] {
   return []
 }
 
+/** `ai` normalizado pelo Opus; um manifest anterior não o traz, e a ausência fica visível. */
+function aiOf(value: unknown): { ai?: StructureActionAi } {
+  if (value === null || typeof value !== 'object') return {}
+  const ai = value as Record<string, unknown>
+  return {
+    ai: {
+      enabled: ai['enabled'] === true,
+      ...optional('description', ai['description']),
+      destructive: ai['destructive'] === true,
+      requiresConfirmation: ai['requiresConfirmation'] === true,
+    },
+  }
+}
+
+/** O assistente só vale com as chaves que o identificam; uma forma parcial não é mostrada pela metade. */
+function assistantOf(value: unknown): { assistant?: StructureAssistant } {
+  if (value === null || typeof value !== 'object') return {}
+  const raw = value as Record<string, unknown>
+  const resource = str(raw['resource'])
+  const skill = str(raw['skill'])
+  const title = str(raw['title'])
+  if (resource === undefined || skill === undefined || title === undefined) return {}
+  return {
+    assistant: {
+      resource,
+      skill,
+      label: str(raw['label']) ?? resource,
+      title,
+      context: list(raw['context']),
+      ...(typeof raw['maxContextChars'] === 'number' ? { maxContextChars: raw['maxContextChars'] } : {}),
+    },
+  }
+}
+
 function optional(key: string, value: unknown): Record<string, string> {
   const text = str(value)
   return text === undefined ? {} : { [key]: text }
@@ -331,6 +401,10 @@ export function readStructure(path: string): Structure | null {
         invalidates: list(item['invalidates']),
         input: paramsOf(item['input']),
         output: paramsOf(item['output']),
+        ...(item['effect'] === 'read' || item['effect'] === 'write' ? { effect: item['effect'] } : {}),
+        ...(typeof item['personalData'] === 'boolean' ? { personalData: item['personalData'] } : {}),
+        ...aiOf(item['ai']),
+        ...assistantOf(item['assistant']),
       })
     }
 

@@ -24,6 +24,7 @@ import {
   FlaskConical,
   KeyRound,
   LayoutTemplate,
+  MessagesSquare,
   Package,
   Plug,
   RefreshCw,
@@ -37,6 +38,7 @@ import { Button, Sidebar, SidebarNav } from '@softize/opus/ui/react'
 import { RequestsView } from './views/requests.tsx'
 import {
   ActionsView,
+  AssistantsView,
   DictsView,
   DocsView,
   EntitiesView,
@@ -95,9 +97,17 @@ const CODE: ViewSpec[] = [
     id: 'actions',
     label: 'Ações',
     title: 'Ações',
-    description: 'Todas as ações que a plataforma pode executar.',
+    description: 'Todas as ações que a plataforma pode executar, com o efeito, o dado pessoal e a publicação para a IA.',
     icon: <Zap className={size} />,
     render: () => <ActionsView />,
+  },
+  {
+    id: 'assistants',
+    label: 'Assistentes',
+    title: 'Assistentes',
+    description: 'A ação dona de cada tipo de recurso, a Habilidade que a IA segue e os campos que vão ao modelo.',
+    icon: <MessagesSquare className={size} />,
+    render: () => <AssistantsView />,
   },
   {
     id: 'presentations',

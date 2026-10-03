@@ -1,0 +1,196 @@
+{
+  "version": "1",
+  "opusVersion": "25.2.0",
+  "seeds": [],
+  "presentations": [],
+  "domains": [
+    {
+      "name": "customer",
+      "description": null,
+      "dicts": {},
+      "repository": false,
+      "service": false,
+      "entities": [],
+      "dataProducts": [],
+      "actions": [
+        {
+          "name": "customer.view",
+          "kind": "view",
+          "summary": null,
+          "description": "Reúne o cadastro canônico e o relacionamento comercial.",
+          "label": "Ver cliente",
+          "title": null,
+          "icon": null,
+          "color": null,
+          "tags": [],
+          "permission": "customer.read",
+          "authorize": "<function>",
+          "public": false,
+          "automatable": false,
+          "effect": "read",
+          "personalData": true,
+          "ai": {
+            "enabled": true,
+            "description": null,
+            "destructive": false,
+            "requiresConfirmation": false
+          },
+          "assistant": {
+            "resource": "customer",
+            "skill": "review-customer",
+            "label": "Assistente do cliente",
+            "title": "name",
+            "context": [
+              "kind",
+              "stage",
+              "leads.totalCount",
+              "leads.latest.status"
+            ],
+            "maxContextChars": 4000
+          },
+          "internal": false,
+          "input": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "stage": {
+                "type": "string"
+              },
+              "document": {
+                "type": "string"
+              },
+              "leads": {
+                "type": "object",
+                "properties": {
+                  "totalCount": {
+                    "type": "number"
+                  },
+                  "latest": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "totalCount",
+                  "latest"
+                ],
+                "additionalProperties": false,
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "kind",
+              "stage",
+              "document",
+              "leads"
+            ],
+            "additionalProperties": false
+          },
+          "invalidates": null,
+          "confirm": null,
+          "rateLimit": null,
+          "messages": null,
+          "examples": [],
+          "errors": [],
+          "projection": [],
+          "expand": null
+        },
+        {
+          "name": "customer.merge",
+          "kind": "simple",
+          "summary": null,
+          "description": "Une dois cadastros.",
+          "label": null,
+          "title": null,
+          "icon": null,
+          "color": null,
+          "tags": [],
+          "permission": "customer.write",
+          "authorize": "<function>",
+          "public": false,
+          "automatable": false,
+          "effect": "write",
+          "personalData": false,
+          "ai": {
+            "enabled": true,
+            "description": null,
+            "destructive": true,
+            "requiresConfirmation": false
+          },
+          "internal": false,
+          "input": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "into": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "from",
+              "into"
+            ],
+            "additionalProperties": false
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "invalidates": null,
+          "confirm": null,
+          "rateLimit": null,
+          "messages": null,
+          "examples": [],
+          "errors": [],
+          "emits": [],
+          "background": false
+        }
+      ],
+      "reactions": [],
+      "schedules": [],
+      "subdomains": []
+    }
+  ]
+}

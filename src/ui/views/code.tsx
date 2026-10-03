@@ -4,7 +4,7 @@
  * A fonte é o manifest do Opus, então cada tela aqui mostra a declaração e a documentação
  * de negócio que vive colada nela. Sem manifest não há adivinhação: a tela pede `opus gen`.
  */
-import type { Structure } from '../../index.ts'
+import type { Structure, StructureAction } from '../../index.ts'
 import { Badge, EmptyValue, MetricCard, PresentationInspector, Surface } from '@softize/opus/ui/react'
 import { MetricGrid } from '../metric-grid.tsx'
 import { useDocs, useStructure } from '../data.ts'
@@ -96,6 +96,25 @@ function useDeclarations<T>(pick: (structure: Structure) => T[]): {
   }
 }
 
+const EFFECT_LABEL = { read: 'Leitura', write: 'Escrita' } as const
+
+/** Sim, não ou a ausência de declaração — a ausência é informação, não um "não". */
+const declared = (value: boolean | undefined): React.ReactNode =>
+  value === undefined ? <EmptyValue compact label="Não declarado" /> : value ? 'Sim' : 'Não'
+
+function aiCell(action: StructureAction): React.ReactNode {
+  // Manifest gerado antes de o Opus projetar `ai`: não dá para dizer se a action é publicada.
+  if (action.ai === undefined) return <EmptyValue compact label="O manifest não informa" />
+  if (!action.ai.enabled) return 'Não'
+  const guard = action.ai.destructive ? 'Destrutiva' : action.ai.requiresConfirmation ? 'Pede confirmação' : null
+  return (
+    <div>
+      <div>Publicada</div>
+      {guard !== null && <div className="text-xs text-muted-foreground">{guard}</div>}
+    </div>
+  )
+}
+
 export function ActionsView(): React.ReactElement {
   const { rows, loading, error, missing } = useDeclarations((s) => s.actions)
   if (missing) return <ManifestMissing />
@@ -122,6 +141,23 @@ export function ActionsView(): React.ReactElement {
       className: 'w-40',
     },
     {
+      header: 'Efeito',
+      cell: (a) => (a.effect === undefined ? <EmptyValue compact label="Não declarado" /> : EFFECT_LABEL[a.effect]),
+      className: 'w-24',
+    },
+    { header: 'Dado pessoal', cell: (a) => declared(a.personalData), className: 'w-28' },
+    { header: 'IA', cell: aiCell, className: 'w-36' },
+    {
+      header: 'Assistente',
+      cell: (a) =>
+        a.assistant === undefined ? (
+          <EmptyValue compact label="Sem assistente" />
+        ) : (
+          <span className={mono}>{a.assistant.resource}</span>
+        ),
+      className: 'w-40',
+    },
+    {
       header: 'Emite / invalida',
       cell: (a) => <span className="tabular-nums text-muted-foreground">{a.invalidates.length}</span>,
       className: 'w-32 text-right',
@@ -134,8 +170,87 @@ export function ActionsView(): React.ReactElement {
       columns={columns}
       loading={loading}
       error={error}
-      search={(a) => `${a.name} ${a.domain} ${a.description ?? ''}`}
+      search={(a) => `${a.name} ${a.domain} ${a.description ?? ''} ${a.assistant?.resource ?? ''}`}
       emptyMessage="Nenhuma ação declarada."
+    />
+  )
+}
+
+/**
+ * Os assistentes de recurso: a action dona de cada tipo, a Habilidade que a IA segue e os campos
+ * que o host pode entregar ao modelo (ADR 0053 do Opus).
+ */
+export function AssistantsView(): React.ReactElement {
+  const { data } = useStructure()
+  const { rows, loading, error, missing } = useDeclarations((s) =>
+    s.actions.flatMap((action) =>
+      action.assistant === undefined ? [] : [{ action, assistant: action.assistant }],
+    ),
+  )
+  if (missing) return <ManifestMissing />
+  const projectsAi = data?.actions.some((action) => action.ai !== undefined) ?? false
+  return (
+    <DeclarationTable
+      rows={rows}
+      loading={loading}
+      error={error}
+      search={({ action, assistant }) =>
+        `${assistant.resource} ${assistant.label} ${assistant.skill} ${action.name} ${assistant.context.join(' ')}`
+      }
+      emptyMessage={
+        projectsAi
+          ? 'Nenhuma ação declara assistente. Uma ação view vira a dona de um tipo de recurso quando declara `assistant` no contrato.'
+          : 'O manifest foi gerado por uma versão do Opus que não projeta assistentes. Atualize o Opus para a 25.2 ou mais nova e rode `opus gen`.'
+      }
+      columns={[
+        {
+          header: 'Recurso',
+          cell: ({ assistant }) => <span className={mono}>{assistant.resource}</span>,
+          className: 'w-40',
+        },
+        { header: 'Assistente', cell: ({ assistant }) => assistant.label, className: 'w-48' },
+        {
+          header: 'Ação dona',
+          cell: ({ action }) => <span className={mono}>{action.name}</span>,
+          className: 'w-56',
+        },
+        {
+          header: 'Habilidade',
+          cell: ({ assistant }) => <span className={mono}>{assistant.skill}</span>,
+          className: 'w-48',
+        },
+        {
+          header: 'Título',
+          cell: ({ assistant }) => <span className={mono}>{assistant.title}</span>,
+          className: 'w-32',
+        },
+        {
+          header: 'Campos enviados ao modelo',
+          cell: ({ assistant }) =>
+            assistant.context.length === 0 ? (
+              <EmptyValue compact label="Nenhum campo" />
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {assistant.context.map((path) => (
+                  <Badge key={path} context="neutral" variant="solid" className={mono}>
+                    {path}
+                  </Badge>
+                ))}
+              </div>
+            ),
+        },
+        {
+          header: 'Teto',
+          cell: ({ assistant }) =>
+            assistant.maxContextChars === undefined ? (
+              <EmptyValue compact label="O manifest não informa" />
+            ) : (
+              <span className="tabular-nums">{assistant.maxContextChars.toLocaleString('pt-BR')}</span>
+            ),
+          className: 'w-24 text-right',
+        },
+        { header: 'Dado pessoal', cell: ({ action }) => declared(action.personalData), className: 'w-28' },
+      ]}
     />
   )
 }

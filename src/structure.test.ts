@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { docCoverage, readStructure } from './structure.ts'
 
@@ -193,5 +194,88 @@ describe('lente de estrutura', () => {
       { kind: 'action', domain: 'sales', name: 'lead.list' },
       { kind: 'field', domain: 'sales', name: 'Lead.phone' },
     ])
+  })
+})
+
+/**
+ * Manifest gerado pelo `opus gen` do candidato 25.2.0 do Opus (ADR 0053): o Opus novo ainda não
+ * está publicado, então a fixture é a saída real do gerador, versionada fora de `src` para não
+ * entrar no pacote.
+ */
+const ASSISTANT_MANIFEST = fileURLToPath(new URL('../fixtures/opus-25.2-assistant-manifest.json', import.meta.url))
+
+describe('lente de estrutura — publicação para a IA e assistente (Opus 25.2)', () => {
+  let dir: string
+  let path: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'lens-structure-ai-'))
+    path = join(dir, 'manifest.json')
+    writeFileSync(path, JSON.stringify(MANIFEST))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('lê ai, efeito, dado pessoal e o assistente da action dona', () => {
+    const structure = readStructure(ASSISTANT_MANIFEST)!
+    const byName = Object.fromEntries(structure.actions.map((action) => [action.name, action]))
+
+    expect(byName['customer.view']).toMatchObject({
+      effect: 'read',
+      personalData: true,
+      ai: { enabled: true, destructive: false, requiresConfirmation: false },
+      assistant: {
+        resource: 'customer',
+        skill: 'review-customer',
+        label: 'Assistente do cliente',
+        title: 'name',
+        context: ['kind', 'stage', 'leads.totalCount', 'leads.latest.status'],
+        maxContextChars: 4000,
+      },
+    })
+    // `description: null` no manifest é ausência, não um texto vazio para o modelo.
+    expect(byName['customer.view']?.ai).not.toHaveProperty('description')
+    expect(byName['customer.merge']).toMatchObject({
+      effect: 'write',
+      personalData: false,
+      ai: { enabled: true, destructive: true },
+    })
+    expect(byName['customer.merge']).not.toHaveProperty('assistant')
+  })
+
+  it('num manifest anterior, ausência de ai e de declaração não vira "não"', () => {
+    const structure = readStructure(path)!
+    const action = structure.actions[0]!
+
+    expect(action).not.toHaveProperty('ai')
+    expect(action).not.toHaveProperty('effect')
+    expect(action).not.toHaveProperty('personalData')
+    expect(action).not.toHaveProperty('assistant')
+  })
+
+  it('manifest com effect e personalData nulos (não declarados) deixa os dois ausentes', () => {
+    const manifest = structuredClone(MANIFEST) as unknown as { domains: { actions: Record<string, unknown>[] }[] }
+    Object.assign(manifest.domains[0]!.actions[0]!, {
+      effect: null,
+      personalData: null,
+      ai: { enabled: false, description: null, destructive: false, requiresConfirmation: false },
+    })
+    writeFileSync(path, JSON.stringify(manifest))
+
+    const action = readStructure(path)!.actions[0]!
+
+    expect(action).not.toHaveProperty('effect')
+    expect(action).not.toHaveProperty('personalData')
+    expect(action.ai).toEqual({ enabled: false, destructive: false, requiresConfirmation: false })
+  })
+
+  it('assistente sem as chaves que o identificam não é mostrado pela metade', () => {
+    const manifest = structuredClone(MANIFEST) as unknown as { domains: { actions: Record<string, unknown>[] }[] }
+    manifest.domains[0]!.actions[0]!['assistant'] = { resource: 'lead', context: ['stage'] }
+    writeFileSync(path, JSON.stringify(manifest))
+
+    expect(readStructure(path)!.actions[0]).not.toHaveProperty('assistant')
   })
 })

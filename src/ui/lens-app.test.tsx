@@ -61,6 +61,59 @@ const STRUCTURE = {
   ],
 }
 
+/**
+ * O que o servidor da lente devolve para `fixtures/opus-25.2-assistant-manifest.json`, o manifest
+ * real do candidato 25.2 do Opus (ADR 0053). A leitura do manifest tem teste próprio em
+ * `structure.test.ts`; aqui o painel só pode receber tipos do servidor, então a estrutura é escrita.
+ */
+const AI_STRUCTURE = {
+  ...STRUCTURE,
+  opusVersion: '25.2.0',
+  domains: [{ name: 'customer', actions: 2, entities: 0, dataProducts: 0 }],
+  actions: [
+    {
+      domain: 'customer',
+      name: 'customer.view',
+      kind: 'view',
+      label: 'Ver cliente',
+      description: 'Reúne o cadastro canônico e o relacionamento comercial.',
+      permission: 'customer.read',
+      tags: [],
+      emits: [],
+      invalidates: [],
+      input: [{ name: 'id', type: 'string', optional: false }],
+      output: [],
+      effect: 'read',
+      personalData: true,
+      ai: { enabled: true, destructive: false, requiresConfirmation: false },
+      assistant: {
+        resource: 'customer',
+        skill: 'review-customer',
+        label: 'Assistente do cliente',
+        title: 'name',
+        context: ['kind', 'stage', 'leads.totalCount', 'leads.latest.status'],
+        maxContextChars: 4000,
+      },
+    },
+    {
+      domain: 'customer',
+      name: 'customer.merge',
+      kind: 'simple',
+      description: 'Une dois cadastros.',
+      permission: 'customer.write',
+      tags: [],
+      emits: [],
+      invalidates: [],
+      input: [],
+      output: [],
+      effect: 'write',
+      personalData: false,
+      ai: { enabled: true, destructive: true, requiresConfirmation: false },
+    },
+  ],
+  permissions: [],
+}
+
 const RECORDS = [
   {
     id: 'rec-1',
@@ -73,6 +126,9 @@ const RECORDS = [
   },
 ]
 
+/** O `/structure` de cada teste; o padrão é a estrutura mínima acima. */
+let structure: unknown = STRUCTURE
+
 function respond(url: string): unknown {
   if (url.endsWith('/records')) return RECORDS
   if (url.includes('/records/')) {
@@ -82,7 +138,7 @@ function respond(url: string): unknown {
       entries: [{ kind: 'query', sql: 'select 1', at: Date.now(), durationMs: 3 }],
     }
   }
-  if (url.endsWith('/structure')) return STRUCTURE
+  if (url.endsWith('/structure')) return structure
   if (url.endsWith('/docs'))
     return {
       total: 2,
@@ -151,6 +207,7 @@ describe('LensApp', () => {
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     requested = []
+    structure = STRUCTURE
     vi.stubGlobal('fetch', (input: string) => {
       requested.push(String(input))
       return Promise.resolve({
@@ -234,6 +291,52 @@ describe('LensApp', () => {
       await flush()
       expect(container.textContent, label).toContain(expected)
     }
+  })
+
+  it('mostra a publicação para a IA e o assistente lidos de um manifest do Opus 25.2', async () => {
+    structure = AI_STRUCTURE
+    await mount()
+
+    const open = async (label: string): Promise<string> => {
+      const button = [...container.querySelectorAll('button')].find((item) => item.textContent === label)
+      expect(button, label).toBeDefined()
+      await act(async () => {
+        button!.click()
+      })
+      await flush()
+      return container.textContent ?? ''
+    }
+
+    const actions = await open('Ações')
+    for (const expected of ['Leitura', 'Escrita', 'Publicada', 'Destrutiva', 'customer']) {
+      expect(actions, expected).toContain(expected)
+    }
+    const row = [...container.querySelectorAll('tr')].find((tr) => tr.textContent?.includes('customer.view'))
+    expect(row?.textContent).toContain('Sim')
+
+    const assistants = await open('Assistentes')
+    expect(location.pathname).toBe('/lens/assistants')
+    for (const expected of [
+      'Assistente do cliente',
+      'customer.view',
+      'review-customer',
+      'leads.latest.status',
+      '4.000',
+    ]) {
+      expect(assistants, expected).toContain(expected)
+    }
+    expect(assistants).not.toContain('customer.merge')
+  })
+
+  it('explica por que não há assistentes num manifest anterior ao Opus 25.2', async () => {
+    await mount()
+    const button = [...container.querySelectorAll('button')].find((item) => item.textContent === 'Assistentes')
+    await act(async () => {
+      button!.click()
+    })
+    await flush()
+
+    expect(container.textContent).toContain('não projeta assistentes')
   })
 
   it('abre direto no registro quando o endereço aponta para uma requisição', async () => {

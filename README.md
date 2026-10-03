@@ -1,7 +1,8 @@
 # Lens
 
-> **Status:** v0.8 — leitura estática, Presentations, Produtos de Dados, telemetria local e painel
-> no pacote. Uma versão, sem semver por módulo. Compatível com `@softize/opus` 24.
+> **Status:** v0.9 — leitura estática, Presentations, Produtos de Dados, publicação para a IA e
+> assistentes de recurso, telemetria local e painel no pacote. Uma versão, sem semver por módulo.
+> Compatível com `@softize/opus` 24 e 25.
 
 > **Veio do `@softize/opus-lens`?** O pacote mudou de nome na 0.6.0 e passou a trazer o painel.
 > Veja [Migração a partir do `@softize/opus-lens`](#migração-a-partir-do-softizeopus-lens).
@@ -24,8 +25,12 @@ ecossistema PHP.
 
 **Da declaração**, a partir do `.opus/manifest.json` que o `opus gen` publica:
 
-- domínios, actions (com entrada, saída, permissão e o que emitem e invalidam), entidades e seus
-  campos, Presentations, Produtos de Dados, dicionários, reactions e schedules;
+- domínios, actions (com entrada, saída, permissão, efeito, dado pessoal, publicação para a IA e o
+  que emitem e invalidam), entidades e seus campos, Presentations, Produtos de Dados, dicionários,
+  reactions e schedules;
+- os assistentes de recurso: a action dona de cada tipo de recurso, a Habilidade que a IA segue e os
+  campos que vão ao modelo. A publicação para a IA e os assistentes chegam ao manifest a partir do
+  Opus 25.2; num manifest anterior, a lente diz que ele não informa, em vez de mostrar "não";
 - linhagem declarada entre Fontes, entities, Produtos de Dados e suas Actions de interface;
 - cobertura de documentação, conformidade pela régua do Opus **do projeto observado**, inventário
   de testes e a configuração de agentes que o repositório carrega.
