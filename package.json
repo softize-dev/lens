@@ -1,6 +1,6 @@
 {
   "name": "@softize/lens",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Lente de desenvolvimento para projetos Opus: o que uma requisição fez e o que o projeto declara.",
   "license": "MIT",
