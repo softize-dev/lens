@@ -210,7 +210,8 @@ if [ "$BUMP" != "none" ]; then
   echo "→ Levando o bump pra main antes de publicar"
   if ! git push -q origin main; then
     erro "  ✗ push recusado (outra sessão empurrou durante os gates?). NADA foi publicado." \
-         "    Reconcilie a main e rode de novo; o commit do bump já está local."
+         "    O commit do bump permanece local. Reconcilie, revise e envie com os hooks habituais." \
+         "    Com a main limpa e sincronizada, retome com 'pnpm release none', sem outro bump."
   fi
   echo "  ✓ origin/main tem a $NEW"
 fi
@@ -222,28 +223,15 @@ fi
 echo ""
 echo "→ Publicando"
 if ! pnpm publish --no-git-checks --access public; then
-  if [ "$BUMP" != "none" ]; then
-    revert="'git revert HEAD' (o commit do bump é o topo) e empurrar"
-    dica=""
-  else
-    revert="reverter o commit que declarou a $NEW e empurrar"
-    dica="         (ache-o com: git log -S'\"version\": \"$NEW\"' -- package.json)"
-  fi
-  printf '\n%s\n' "  ✗ O PUBLISH FALHOU." >&2
-  printf '%s\n' "    origin/main declara a $NEW. O que fazer depende de a versão ter chegado ao" \
-                "    registry ou não — o publish pode ter falhado DEPOIS de gravá-la. Confira:" \
-                "      npm view $NAME@$NEW version" \
-                "" \
-                "    Se NÃO estiver publicada, é o descasamento que este script existe para não" \
-                "    deixar passar. Duas saídas, nesta ordem de preferência:" \
-                "      1. Resolver a causa (token em ~/.npmrc? rede? build?) e rodar" \
-                "         'pnpm release none', que publica a $NEW sem bumpar de novo." \
-                "      2. Se não for publicar agora, desfazer o anúncio: $revert," \
-                "         para a main parar de declarar uma versão que não existe no registry." >&2
-  if [ -n "$dica" ]; then printf '%s\n' "$dica" >&2; fi
-  printf '%s\n' "" \
-                "    Se JÁ estiver publicada, a falha foi no reenvio e a main está correta:" \
-                "    não há o que desfazer." >&2
+  printf '\n%s\n' "  ✗ O publicador retornou uma falha; origin/main já declara a $NEW." >&2
+  printf '%s\n' "    Confira a versão exata; a propagação no registry pode demorar:" \
+                "      npm view $NAME@$NEW version --registry $REGISTRY" \
+                "    Aguarde e consulte novamente. Uma resposta vazia ou erro de rede não comprova ausência." \
+                "    Depois de resolver a causa, retome com 'pnpm release none', sem outro incremento." \
+                "    Se a versão já estiver publicada, confira a publicação; não há o que desfazer." \
+                "    Não reverta com base apenas numa consulta sem resultado. Para abandonar a publicação," \
+                "    confirme a ausência após a propagação e identifique o commit correto, sem presumir HEAD." \
+                "    Se persistir dúvida, investigue antes de alterar o histórico. Veja docs/releasing.md." >&2
   exit 1
 fi
 
